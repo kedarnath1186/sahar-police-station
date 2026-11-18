@@ -1,0 +1,142 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Officer Login - {{ POLICE_STATION_NAME_EN }} ({{ POLICE_STATION_NAME_MR }})</title>
+
+    <!-- Google Fonts: Noto Sans & Noto Sans Devanagari -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700&family=Noto+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+
+    <!-- Bootstrap 5 & Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+
+    <!-- App CSS -->
+    <link rel="stylesheet" href="{% static 'css/app.css' %}">
+
+    <style>
+        body {
+            background-color: var(--clr-bg);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .login-container {
+            max-width: 440px;
+            width: 100%;
+            margin: 32px auto;
+            padding: 0 16px;
+        }
+        .login-card {
+            background: #FFFFFF;
+            border-radius: 8px;
+            box-shadow: 0 4px 24px rgba(7, 28, 63, 0.09);
+            border-top: 4px solid var(--clr-primary);
+            padding: 36px 30px;
+        }
+        .login-logo {
+            height: 120px;
+            width: auto;
+            object-fit: contain;
+            margin-bottom: 14px;
+        }
+        .govt-tag {
+            font-size: 11px;
+            font-weight: 700;
+            color: #6B7280;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        @media (max-width: 360px) {
+            .login-card {
+                padding: 24px 18px;
+            }
+            .login-logo {
+                height: 96px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Persistent Prototype Band -->
+    <div class="prototype-banner">
+        <i class="bi bi-exclamation-triangle-fill me-1"></i>
+        <strong>PROTOTYPE – DUMMY DATA ONLY</strong> &bull; Official Police Testing Prototype
+    </div>
+
+    <div class="container my-auto">
+        <div class="login-container">
+            <div class="login-card">
+                <div class="text-center mb-4">
+                    <img src="{% static 'img/maharashtra_police_logo.png' %}" alt="Maharashtra Police Emblem" class="login-logo">
+                    <div class="govt-tag">{{ POLICE_FORCE_NAME_EN }} • {{ POLICE_FORCE_NAME_MR }}</div>
+                    <h2 class="h5 mt-2 mb-1 fw-bold" style="color: var(--clr-primary);">{{ POLICE_STATION_NAME_EN }}</h2>
+                    <div class="fw-semibold" style="color: var(--clr-accent);">{{ POLICE_STATION_NAME_MR }}</div>
+                    <p class="text-muted small mt-2 mb-0" style="font-size: 11px;">{{ POLICE_STATION_ADDRESS }}</p>
+                </div>
+
+                {% if error %}
+                <div class="alert alert-danger d-flex align-items-center py-2 px-3 mb-3" role="alert">
+                    <i class="bi bi-shield-x me-2 fs-5 flex-shrink-0"></i>
+                    <div class="small">{{ error }}</div>
+                </div>
+                {% endif %}
+
+                {% if messages %}
+                    {% for message in messages %}
+                    <div class="alert alert-{{ message.tags|default:'info' }} py-2 px-3 mb-3 small" role="alert">
+                        {{ message }}
+                    </div>
+                    {% endfor %}
+                {% endif %}
+
+                <form method="post" action="{% url 'login' %}">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="id_username" class="form-label">
+                            Officer ID / Username <span class="text-danger">*</span>
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-muted"><i class="bi bi-person-badge"></i></span>
+                            <input type="text" name="username" id="id_username" class="form-control" placeholder="Enter officer username" required autofocus autocomplete="username">
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="id_password" class="form-label">
+                            Password <span class="text-danger">*</span>
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-muted"><i class="bi bi-lock-fill"></i></span>
+                            <input type="password" name="password" id="id_password" class="form-control" placeholder="Enter password" required autocomplete="current-password">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary-navy w-100 justify-content-center py-2 shadow-sm" {% if locked %}disabled{% endif %}>
+                        <i class="bi bi-shield-lock-fill me-1"></i> Authenticate & Enter
+                    </button>
+                </form>
+
+                <div class="text-center mt-4 pt-3 border-top">
+                    <small class="text-muted d-block fw-semibold">
+                        <i class="bi bi-shield-fill-check text-success me-1"></i> State Criminal Surveillance Network
+                    </small>
+                    <small class="text-muted" style="font-size: 11px;">Rate limit: Max 5 attempts per 15 minutes.</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="text-center py-3 text-muted small">
+        © 2026 {{ POLICE_FORCE_NAME_EN }} &bull; {{ POLICE_STATION_NAME_EN }} &bull; <strong class="text-danger">PROTOTYPE – DUMMY DATA ONLY</strong>
+    </footer>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

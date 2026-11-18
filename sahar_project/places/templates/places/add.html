@@ -1,0 +1,157 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Add Famous Place - Sahar Police Station{% endblock %}
+{% block page_title %}Register Landmark / Famous Place{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'places_list' %}">Famous Places</a></li>
+<li class="breadcrumb-item active" aria-current="page">Add Place</li>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="app-card">
+            <div class="border-bottom pb-3 mb-4">
+                <h2 class="h5 fw-bold mb-1" style="color: var(--clr-primary);">
+                    <i class="bi bi-building-add me-2 text-primary"></i>Register Famous Place or Critical Landmark
+                </h2>
+                <p class="text-muted small mb-0">
+                    Add prominent monuments, temples, tourist locations, and transit hubs within police surveillance grid.
+                </p>
+            </div>
+
+            {% if form.non_field_errors %}
+            <div class="alert alert-danger" role="alert">
+                {% for err in form.non_field_errors %}
+                    <div><i class="bi bi-exclamation-triangle-fill me-1"></i> {{ err }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <form method="post" action="{% url 'place_add' %}" enctype="multipart/form-data" novalidate id="placeForm">
+                {% csrf_token %}
+
+                <div class="mb-3">
+                    <label for="{{ form.name.id_for_label }}" class="form-label">
+                        Place Name <span class="required-asterisk">*</span>
+                    </label>
+                    {{ form.name }}
+                    {% if form.name.errors %}
+                    <div class="invalid-feedback d-block">
+                        {% for error in form.name.errors %}{{ error }}{% endfor %}
+                    </div>
+                    {% endif %}
+                    <div class="form-text">e.g. Gateway of India, Chhatrapati Shivaji Maharaj Terminus.</div>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label for="{{ form.city.id_for_label }}" class="form-label">
+                            City <span class="required-asterisk">*</span>
+                        </label>
+                        {{ form.city }}
+                        {% if form.city.errors %}
+                        <div class="invalid-feedback d-block">
+                            {% for error in form.city.errors %}{{ error }}{% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ form.district.id_for_label }}" class="form-label">
+                            District (Maharashtra) <span class="required-asterisk">*</span>
+                        </label>
+                        {{ form.district }}
+                        {% if form.district.errors %}
+                        <div class="invalid-feedback d-block">
+                            {% for error in form.district.errors %}{{ error }}{% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="{{ form.address.id_for_label }}" class="form-label">
+                        Full Address <span class="required-asterisk">*</span>
+                    </label>
+                    {{ form.address }}
+                    {% if form.address.errors %}
+                    <div class="invalid-feedback d-block">
+                        {% for error in form.address.errors %}{{ error }}{% endfor %}
+                    </div>
+                    {% endif %}
+                    <div class="form-text">Used for Nominatim GPS coordinate resolution.</div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="{{ form.description.id_for_label }}" class="form-label">
+                        Description & Security Notes <span class="required-asterisk">*</span>
+                    </label>
+                    {{ form.description }}
+                    {% if form.description.errors %}
+                    <div class="invalid-feedback d-block">
+                        {% for error in form.description.errors %}{{ error }}{% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Photo with Live Preview -->
+                <div class="mb-4">
+                    <label for="{{ form.photo.id_for_label }}" class="form-label">
+                        Landmark Photograph (Optional)
+                    </label>
+                    {{ form.photo }}
+                    {% if form.photo.errors %}
+                    <div class="invalid-feedback d-block">
+                        {% for error in form.photo.errors %}{{ error }}{% endfor %}
+                    </div>
+                    {% endif %}
+                    <div class="form-text">JPG, PNG, or WEBP up to 5 MB. Verified via Pillow.</div>
+
+                    <!-- Live Image Preview Container -->
+                    <div id="placePreviewContainer" class="mt-3 text-center p-3 bg-light rounded border" style="display: none;">
+                        <span class="d-block text-muted small mb-2 fw-semibold">Photo Live Preview:</span>
+                        <img id="placeImagePreview" src="#" alt="Place Preview" class="photo-preview shadow-sm" style="max-height: 250px;">
+                    </div>
+                </div>
+
+                <div class="sticky-actions">
+                    <button type="submit" class="btn btn-primary-navy">
+                        <i class="bi bi-check-circle-fill"></i> Save & Geocode Place
+                    </button>
+                    <a href="{% url 'places_list' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-x-circle"></i> Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const fileInput = document.getElementById("{{ form.photo.id_for_label }}");
+        const previewContainer = document.getElementById("placePreviewContainer");
+        const imagePreview = document.getElementById("placeImagePreview");
+
+        if (fileInput) {
+            fileInput.addEventListener("change", function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(evt) {
+                        imagePreview.src = evt.target.result;
+                        previewContainer.style.display = "block";
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    previewContainer.style.display = "none";
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

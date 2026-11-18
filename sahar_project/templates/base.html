@@ -1,0 +1,330 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>{% block title %}{{ POLICE_STATION_NAME_EN }}{% endblock %} - {{ POLICE_FORCE_NAME_EN }}</title>
+
+    <!-- Google Fonts: Noto Sans & Noto Sans Devanagari -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700&family=Noto+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
+
+    <!-- Custom Stylesheet -->
+    <link rel="stylesheet" href="{% static 'css/app.css' %}">
+
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Accessibility Skip Link -->
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+
+    <!-- Sidebar Overlay for Mobile -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar" id="sidebar" aria-label="Police Navigation">
+        <div class="sidebar-brand text-center">
+            <a href="{% url 'dashboard' %}" class="d-block text-decoration-none text-white">
+                <img src="{% static 'img/maharashtra_police_logo.png' %}" alt="Maharashtra Police Emblem" height="48" class="mb-2">
+                <div class="small fw-semibold text-uppercase tracking-wider" style="color: #E0A526; font-size: 11px; letter-spacing: 0.5px;">
+                    {{ POLICE_FORCE_NAME_EN }} • {{ POLICE_FORCE_NAME_MR }}
+                </div>
+                <h2 class="fs-6 fw-bold mt-1 mb-0 text-white">{{ POLICE_STATION_NAME_EN }}</h2>
+                <div class="small" style="color: #E0A526; font-size: 13px;">{{ POLICE_STATION_NAME_MR }}</div>
+                <div class="text-white-50 mt-1 small" style="font-size: 10px; line-height: 1.25;">
+                    {{ POLICE_STATION_ADDRESS }}
+                </div>
+            </a>
+        </div>
+
+        <nav class="sidebar-nav">
+            <ul class="nav flex-column p-0 m-0">
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'dashboard' %}">
+                        <i class="bi bi-speedometer2"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'accused_add' %}active{% endif %}" href="{% url 'accused_add' %}">
+                        <i class="bi bi-person-plus"></i>
+                        <span>Add Accused</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name in 'accused_list,accused_detail,accused_edit' %}active{% endif %}" href="{% url 'accused_list' %}">
+                        <i class="bi bi-people"></i>
+                        <span>View Accused</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'accused_map' %}active{% endif %}" href="{% url 'accused_map' %}">
+                        <i class="bi bi-geo-alt"></i>
+                        <span>Map View</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'accused_table' %}active{% endif %}" href="{% url 'accused_table' %}">
+                        <i class="bi bi-table"></i>
+                        <span>Table View</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'place_add' %}active{% endif %}" href="{% url 'place_add' %}">
+                        <i class="bi bi-building"></i>
+                        <span>Add Famous Place</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name in 'places_list,place_edit' %}active{% endif %}" href="{% url 'places_list' %}">
+                        <i class="bi bi-buildings"></i>
+                        <span>View Famous Places</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="user-name">
+                <i class="bi bi-person-badge"></i>
+                <strong>{{ request.user.get_full_name|default:request.user.username }}</strong>
+            </div>
+            <form method="post" action="{% url 'logout' %}" class="m-0">
+                {% csrf_token %}
+                <button type="submit" class="btn-logout">
+                    <i class="bi bi-box-arrow-right"></i>
+                    <span>Logout</span>
+                </button>
+            </form>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <div class="main-content">
+        <!-- Persistent Prototype Notice Band -->
+        <div class="prototype-banner" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-1"></i>
+            <strong>PROTOTYPE – DUMMY DATA ONLY</strong> &bull; Official Demonstration & Testing System &bull; Unauthorized dissemination prohibited
+        </div>
+
+        <!-- Top Bar -->
+        <header class="topbar">
+            <div class="d-flex align-items-center">
+                <button class="hamburger-btn" id="hamburgerBtn" aria-label="Toggle navigation menu">
+                    <i class="bi bi-list"></i>
+                </button>
+                <div>
+                    <h1 class="page-title">{% block page_title %}Dashboard{% endblock %}</h1>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Home</a></li>
+                            {% block breadcrumb %}{% endblock %}
+                        </ol>
+                    </nav>
+                </div>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-light text-dark border d-none d-sm-inline-flex align-items-center gap-1 py-2 px-3">
+                    <i class="bi bi-shield-check text-success"></i>
+                    <span>Authenticated Officer</span>
+                </span>
+                <form method="post" action="{% url 'logout' %}" class="d-inline m-0">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1" title="Secure Logout">
+                        <i class="bi bi-box-arrow-right"></i>
+                        <span class="d-none d-md-inline">Logout</span>
+                    </button>
+                </form>
+            </div>
+        </header>
+
+        <!-- Toast Notifications Container -->
+        <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 2050;" id="toastPlacement">
+            {% if messages %}
+                {% for message in messages %}
+                <div class="toast align-items-center text-bg-{% if message.tags == 'error' %}danger{% elif message.tags == 'warning' %}warning{% elif message.tags == 'success' %}success{% else %}primary{% endif %} border-0 shadow show mb-2" role="alert" aria-live="assertive" aria-atomic="true">
+                    <div class="d-flex">
+                        <div class="toast-body d-flex align-items-center gap-2">
+                            {% if message.tags == 'success' %}
+                            <i class="bi bi-check-circle-fill fs-5"></i>
+                            {% elif message.tags == 'warning' %}
+                            <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+                            {% elif message.tags == 'error' %}
+                            <i class="bi bi-x-circle-fill fs-5"></i>
+                            {% else %}
+                            <i class="bi bi-info-circle-fill fs-5"></i>
+                            {% endif %}
+                            <div>{{ message }}</div>
+                        </div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                    </div>
+                </div>
+                {% endfor %}
+            {% endif %}
+        </div>
+
+        <!-- Content Body -->
+        <main class="content-wrapper" id="main-content">
+            {% block content %}{% endblock %}
+        </main>
+
+        <!-- Footer -->
+        <footer class="main-footer">
+            <div>
+                © 2026 <strong>{{ POLICE_STATION_NAME_EN }}</strong> ({{ POLICE_STATION_NAME_MR }}), {{ POLICE_FORCE_NAME_EN }}.
+                <span class="d-block d-sm-inline ms-sm-2 text-danger fw-semibold">PROTOTYPE – DUMMY DATA ONLY.</span>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Session Inactivity Timeout Warning Modal -->
+    <div class="modal fade" id="sessionTimeoutModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="sessionTimeoutLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-warning shadow">
+                <div class="modal-header bg-warning-subtle text-warning-emphasis">
+                    <h5 class="modal-title" id="sessionTimeoutLabel">
+                        <i class="bi bi-hourglass-split me-2"></i>Security Notice: Session Inactivity Warning
+                    </h5>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-2">For police records security, sessions are automatically terminated after 30 minutes of inactivity.</p>
+                    <div class="alert alert-warning text-center py-2 mb-3">
+                        <span class="fw-semibold">Auto-logout in: </span>
+                        <span id="sessionCountdown" class="fs-4 fw-bold text-danger">120</span> seconds
+                    </div>
+                    <p class="small text-muted mb-0">Click "Keep Session Alive" to extend your active duty session.</p>
+                </div>
+                <div class="modal-footer">
+                    <form method="post" action="{% url 'logout' %}" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-outline-secondary">Logout Now</button>
+                    </form>
+                    <button type="button" class="btn btn-primary-navy" id="btnKeepSessionAlive">
+                        <i class="bi bi-arrow-repeat me-1"></i> Keep Session Alive
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Core Scripts -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+
+    <script>
+        // Responsive Sidebar Toggle
+        const hamburgerBtn = document.getElementById('hamburgerBtn');
+        const sidebar = document.getElementById('sidebar');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+        function toggleSidebar() {
+            sidebar.classList.toggle('sidebar-open');
+            sidebarOverlay.classList.toggle('active');
+        }
+
+        if (hamburgerBtn) {
+            hamburgerBtn.addEventListener('click', toggleSidebar);
+        }
+        if (sidebarOverlay) {
+            sidebarOverlay.addEventListener('click', toggleSidebar);
+        }
+
+        // Initialize Bootstrap Toasts
+        const toastElList = document.querySelectorAll('.toast');
+        toastElList.forEach(toastEl => {
+            const toast = new bootstrap.Toast(toastEl, { delay: 6000 });
+            toast.show();
+        });
+
+        // 30-Minute Inactivity Session Monitor
+        // 28 min idle = 1680s; 2 min countdown = 120s; total = 1800s
+        let idleTime = 0;
+        const maxIdleSeconds = 1680; // 28 minutes
+        let countdownTimer = null;
+        let remainingSeconds = 120;
+        const timeoutModalEl = document.getElementById('sessionTimeoutModal');
+        let timeoutModal = null;
+        if (timeoutModalEl) {
+            timeoutModal = new bootstrap.Modal(timeoutModalEl);
+        }
+
+        function resetIdleTimer() {
+            idleTime = 0;
+        }
+
+        // Track user activity
+        window.addEventListener('mousemove', resetIdleTimer);
+        window.addEventListener('keydown', resetIdleTimer);
+        window.addEventListener('click', resetIdleTimer);
+        window.addEventListener('scroll', resetIdleTimer);
+
+        // Check idle time every 10 seconds
+        setInterval(function() {
+            idleTime += 10;
+            if (idleTime >= maxIdleSeconds && !countdownTimer && timeoutModal) {
+                // Show warning modal and start countdown
+                remainingSeconds = 120;
+                document.getElementById('sessionCountdown').innerText = remainingSeconds;
+                timeoutModal.show();
+
+                countdownTimer = setInterval(function() {
+                    remainingSeconds -= 1;
+                    const countEl = document.getElementById('sessionCountdown');
+                    if (countEl) countEl.innerText = remainingSeconds;
+
+                    if (remainingSeconds <= 0) {
+                        clearInterval(countdownTimer);
+                        // Trigger logout
+                        const logoutForm = document.createElement('form');
+                        logoutForm.method = 'POST';
+                        logoutForm.action = "{% url 'logout' %}";
+                        const csrfInput = document.createElement('input');
+                        csrfInput.type = 'hidden';
+                        csrfInput.name = 'csrfmiddlewaretoken';
+                        csrfInput.value = '{{ csrf_token }}';
+                        logoutForm.appendChild(csrfInput);
+                        document.body.appendChild(logoutForm);
+                        logoutForm.submit();
+                    }
+                }, 1000);
+            }
+        }, 10000);
+
+        // Keep Alive button handler
+        const btnKeepAlive = document.getElementById('btnKeepSessionAlive');
+        if (btnKeepAlive) {
+            btnKeepAlive.addEventListener('click', function() {
+                if (countdownTimer) {
+                    clearInterval(countdownTimer);
+                    countdownTimer = null;
+                }
+                resetIdleTimer();
+                if (timeoutModal) {
+                    timeoutModal.hide();
+                }
+                // Ping server to refresh session cookie
+                fetch('{% url "dashboard" %}', { method: 'HEAD' });
+            });
+        }
+    </script>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

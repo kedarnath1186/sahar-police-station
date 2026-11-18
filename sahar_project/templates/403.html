@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block title %}403 Forbidden - {{ POLICE_STATION_NAME_EN }}{% endblock %}
+{% block page_title %}Access Prohibited (403){% endblock %}
+
+{% block content %}
+<div class="row justify-content-center my-5">
+    <div class="col-md-7 text-center">
+        <div class="app-card py-5">
+            <i class="bi bi-shield-slash-fill text-danger" style="font-size: 64px;"></i>
+            <h2 class="h4 fw-bold mt-3 text-danger">403 — Unauthorized Access Restricted</h2>
+            <p class="text-secondary mt-2">
+                Your authenticated credentials do not grant permission to view or execute operations on this police resource.
+            </p>
+            <div class="d-flex justify-content-center gap-2 mt-4">
+                <a href="{% url 'dashboard' %}" class="btn btn-primary-navy">
+                    <i class="bi bi-speedometer2 me-1"></i> Return to Station Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

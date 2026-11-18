@@ -1,0 +1,237 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dashboard - {{ POLICE_STATION_NAME_EN }}{% endblock %}
+{% block page_title %}Police Station Control & Surveillance Dashboard{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item active" aria-current="page">Station Overview</li>
+{% endblock %}
+
+{% block content %}
+<!-- Welcome & Quick Operations -->
+<div class="row mb-4 align-items-center">
+    <div class="col-md-7">
+        <h2 class="h5 fw-bold mb-1" style="color: var(--clr-primary);">
+            Welcome, Officer {{ request.user.get_full_name|default:request.user.username }}
+        </h2>
+        <p class="text-muted small mb-0">
+            {{ POLICE_STATION_NAME_EN }} ({{ POLICE_STATION_NAME_MR }}) &bull; Criminal Records & Location Surveillance Desk
+        </p>
+    </div>
+    <div class="col-md-5 text-md-end mt-3 mt-md-0 d-flex gap-2 justify-content-md-end flex-wrap">
+        <a href="{% url 'accused_add' %}" class="btn btn-primary-navy">
+            <i class="bi bi-person-plus-fill"></i> Add Accused
+        </a>
+        <a href="{% url 'accused_map' %}" class="btn btn-gold">
+            <i class="bi bi-geo-alt-fill"></i> Hotspot Map
+        </a>
+    </div>
+</div>
+
+<!-- Primary Metric Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-12 col-sm-6 col-lg-4">
+        <div class="stat-card stat-accused h-100">
+            <div class="stat-icon">
+                <i class="bi bi-people-fill"></i>
+            </div>
+            <div class="stat-info">
+                <div class="stat-value">{{ accused_count }}</div>
+                <div class="stat-label">Total Accused Dossiers</div>
+                <a href="{% url 'accused_list' %}" class="small text-decoration-none mt-1 d-inline-block fw-semibold text-primary">
+                    View full directory <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-sm-6 col-lg-4">
+        <div class="stat-card stat-photos h-100">
+            <div class="stat-icon">
+                <i class="bi bi-camera-fill"></i>
+            </div>
+            <div class="stat-info">
+                <div class="stat-value">{{ photo_count }}</div>
+                <div class="stat-label">Field Photographs Logged</div>
+                <a href="{% url 'accused_table' %}?has_photos=yes" class="small text-decoration-none mt-1 d-inline-block fw-semibold text-warning">
+                    View photographic index <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-sm-6 col-lg-4">
+        <div class="stat-card stat-places h-100">
+            <div class="stat-icon">
+                <i class="bi bi-building"></i>
+            </div>
+            <div class="stat-info">
+                <div class="stat-value">{{ places_count }}</div>
+                <div class="stat-label">Strategic City Landmarks</div>
+                <a href="{% url 'places_list' %}" class="small text-decoration-none mt-1 d-inline-block fw-semibold text-success">
+                    Explore mapped places <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Location Status Verification Grid -->
+<div class="app-card mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2 border-bottom pb-2">
+        <div>
+            <h3 class="card-title h6 mb-0">
+                <i class="bi bi-shield-check text-primary me-2"></i>Location Verification Audit Breakdown
+            </h3>
+            <small class="text-muted">Status of geographic residence verification across all dossiers</small>
+        </div>
+        <a href="{% url 'accused_map' %}" class="btn btn-sm btn-outline-secondary">
+            Open Map Verification Grid
+        </a>
+    </div>
+
+    <div class="row g-3 text-center">
+        <!-- Verified -->
+        <div class="col-6 col-md">
+            <a href="{% url 'accused_table' %}?status=verified" class="text-decoration-none d-block p-3 rounded border bg-light h-100 transition-hover">
+                <span class="badge badge-status-verified py-1 px-2 mb-2 d-inline-block">
+                    <i class="bi bi-check-circle-fill me-1"></i> Verified
+                </span>
+                <div class="fs-4 fw-bold text-success">{{ status_counts.verified }}</div>
+                <small class="text-muted d-block">Officer Certified</small>
+            </a>
+        </div>
+
+        <!-- Manually Set -->
+        <div class="col-6 col-md">
+            <a href="{% url 'accused_table' %}?status=manually_set" class="text-decoration-none d-block p-3 rounded border bg-light h-100 transition-hover">
+                <span class="badge badge-status-manually-set py-1 px-2 mb-2 d-inline-block">
+                    <i class="bi bi-pin-map-fill me-1"></i> Manually Set
+                </span>
+                <div class="fs-4 fw-bold text-primary">{{ status_counts.manually_set }}</div>
+                <small class="text-muted d-block">Field Pinned</small>
+            </a>
+        </div>
+
+        <!-- Needs Review (Clickable Card) -->
+        <div class="col-6 col-md">
+            <a href="{% url 'accused_map' %}?status=needs_review" class="text-decoration-none d-block p-3 rounded border border-warning bg-warning-subtle h-100 shadow-sm transition-hover">
+                <span class="badge badge-status-needs-review py-1 px-2 mb-2 d-inline-block">
+                    <i class="bi bi-exclamation-triangle-fill me-1"></i> Needs Review
+                </span>
+                <div class="fs-4 fw-bold text-warning-emphasis">{{ status_counts.needs_review }}</div>
+                <small class="text-warning-emphasis fw-semibold d-block">Action Required &rarr;</small>
+            </a>
+        </div>
+
+        <!-- Auto Geocoded -->
+        <div class="col-6 col-md">
+            <a href="{% url 'accused_table' %}?status=auto_geocoded" class="text-decoration-none d-block p-3 rounded border bg-light h-100 transition-hover">
+                <span class="badge badge-status-auto-geocoded py-1 px-2 mb-2 d-inline-block">
+                    <i class="bi bi-broadcast me-1"></i> Auto Geocoded
+                </span>
+                <div class="fs-4 fw-bold text-dark">{{ status_counts.auto_geocoded }}</div>
+                <small class="text-muted d-block">Exact Match</small>
+            </a>
+        </div>
+
+        <!-- Not Geocoded -->
+        <div class="col-6 col-md">
+            <a href="{% url 'accused_table' %}?status=not_geocoded" class="text-decoration-none d-block p-3 rounded border bg-light h-100 transition-hover">
+                <span class="badge badge-status-not-geocoded py-1 px-2 mb-2 d-inline-block">
+                    <i class="bi bi-geo-alt-slash me-1"></i> Not Geocoded
+                </span>
+                <div class="fs-4 fw-bold text-secondary">{{ status_counts.not_geocoded }}</div>
+                <small class="text-muted d-block">Missing Coords</small>
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Accused Records Card -->
+<div class="app-card">
+    <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+        <div>
+            <h3 class="card-title mb-0">
+                <i class="bi bi-clock-history text-primary me-2"></i>Recent Accused Entries
+            </h3>
+            <small class="text-muted">Showing 5 most recently registered dossiers</small>
+        </div>
+        <a href="{% url 'accused_list' %}" class="btn btn-sm btn-outline-secondary">
+            View All Accused ({{ accused_count }})
+        </a>
+    </div>
+
+    {% if recent_accused %}
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th scope="col">Record ID</th>
+                    <th scope="col">Full Name</th>
+                    <th scope="col">Mobile</th>
+                    <th scope="col">Location (Village / Taluka / City)</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Accuracy</th>
+                    <th scope="col">Registered (IST)</th>
+                    <th scope="col" class="text-end">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for acc in recent_accused %}
+                <tr>
+                    <td>
+                        <span class="font-monospace fw-bold text-primary small">{{ acc.record_id }}</span>
+                    </td>
+                    <td>
+                        <a href="{% url 'accused_detail' pk=acc.pk %}" class="fw-bold text-decoration-none text-dark">
+                            {{ acc.full_name }}
+                        </a>
+                    </td>
+                    <td>
+                        <span class="font-monospace small text-muted">{{ acc.formatted_mobile }}</span>
+                    </td>
+                    <td>
+                        <span class="text-secondary small">{{ acc.village }}, {{ acc.taluka }}, {{ acc.city }}</span>
+                    </td>
+                    <td>
+                        <span class="badge badge-status-{{ acc.location_status }}">
+                            {{ acc.get_location_status_display }}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="badge badge-accuracy-{{ acc.location_accuracy }} small">
+                            {{ acc.get_location_accuracy_display }}
+                        </span>
+                    </td>
+                    <td class="text-muted small">
+                        {{ acc.created_at|date:"d/m/Y h:i A" }}
+                    </td>
+                    <td class="text-end">
+                        <div class="btn-group btn-group-sm">
+                            <a href="{% url 'accused_detail' pk=acc.pk %}" class="btn btn-outline-primary" title="View Dossier">
+                                <i class="bi bi-eye"></i> View
+                            </a>
+                            <a href="{% url 'accused_edit' pk=acc.pk %}" class="btn btn-outline-secondary" title="Edit Record">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="bi bi-folder-x"></i>
+        <h4>No Accused Records Found</h4>
+        <p>No criminal suspect records have been registered in the station database yet.</p>
+        <a href="{% url 'accused_add' %}" class="btn btn-primary-navy">
+            <i class="bi bi-person-plus"></i> Register First Accused
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

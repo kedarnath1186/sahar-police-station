@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+
+{% block title %}404 Not Found - {{ POLICE_STATION_NAME_EN }}{% endblock %}
+{% block page_title %}Record Not Found (404){% endblock %}
+
+{% block content %}
+<div class="row justify-content-center my-5">
+    <div class="col-md-7 text-center">
+        <div class="app-card py-5">
+            <i class="bi bi-file-earmark-x-fill text-warning" style="font-size: 64px;"></i>
+            <h2 class="h4 fw-bold mt-3 text-dark">404 — Record or Resource Not Found</h2>
+            <p class="text-secondary mt-2">
+                The requested criminal dossier, photograph, landmark, or URL does not exist in the Sahar Police Station database.
+            </p>
+            <div class="d-flex justify-content-center gap-2 mt-4">
+                <a href="{% url 'dashboard' %}" class="btn btn-primary-navy">
+                    <i class="bi bi-speedometer2 me-1"></i> Return to Station Dashboard
+                </a>
+                <a href="{% url 'accused_list' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-people me-1"></i> View Accused Directory
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

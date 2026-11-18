@@ -1,0 +1,170 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Accused Registry (DataTables) - {{ POLICE_STATION_NAME_EN }}{% endblock %}
+{% block page_title %}Criminal Master Register &bull; Searchable Index{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'accused_list' %}">Accused Directory</a></li>
+<li class="breadcrumb-item active" aria-current="page">Registry Table</li>
+{% endblock %}
+
+{% block content %}
+<div class="app-card">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2 border-bottom pb-3">
+        <div>
+            <h2 class="h5 fw-bold mb-1" style="color: var(--clr-primary);">
+                <i class="bi bi-table text-primary me-2"></i>Official Accused Records Register
+            </h2>
+            <p class="text-muted small mb-0">
+                Filter by district, location status, and photographic intelligence with real-time sorting and pagination
+            </p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'accused_add' %}" class="btn btn-primary-navy">
+                <i class="bi bi-person-plus-fill me-1"></i> Add Accused
+            </a>
+            <a href="{% url 'accused_map' %}" class="btn btn-gold">
+                <i class="bi bi-geo-alt-fill me-1"></i> Hotspot Map
+            </a>
+        </div>
+    </div>
+
+    <!-- Filter Form -->
+    <form method="get" action="{% url 'accused_table' %}" class="row g-2 align-items-end mb-4 p-3 bg-light rounded border">
+        <div class="col-md-3">
+            <label class="form-label small fw-bold text-muted mb-1">District:</label>
+            <select name="district" class="form-select form-select-sm" onchange="this.form.submit()">
+                <option value="">All Maharashtra Districts</option>
+                {% for d in districts %}
+                <option value="{{ d }}" {% if selected_district == d %}selected{% endif %}>{{ d }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label small fw-bold text-muted mb-1">Location Status:</label>
+            <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+                <option value="">All Verification Statuses</option>
+                {% for code, label in statuses %}
+                <option value="{{ code }}" {% if selected_status == code %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label small fw-bold text-muted mb-1">Photographs:</label>
+            <select name="has_photos" class="form-select form-select-sm" onchange="this.form.submit()">
+                <option value="">All Records</option>
+                <option value="yes" {% if selected_photos == 'yes' %}selected{% endif %}>Has Photos Only</option>
+                <option value="no" {% if selected_photos == 'no' %}selected{% endif %}>No Photos</option>
+            </select>
+        </div>
+        <div class="col-md-3 d-flex gap-2">
+            {% if selected_district or selected_status or selected_photos %}
+            <a href="{% url 'accused_table' %}" class="btn btn-sm btn-outline-secondary w-100">
+                <i class="bi bi-x-circle me-1"></i> Clear Filters
+            </a>
+            {% endif %}
+        </div>
+    </form>
+
+    <div class="table-responsive">
+        <table id="accusedDataTable" class="table table-striped table-hover align-middle w-100">
+            <thead class="table-light">
+                <tr>
+                    <th scope="col" style="width: 130px;">Record ID</th>
+                    <th scope="col">Full Legal Name</th>
+                    <th scope="col">Mobile (+91)</th>
+                    <th scope="col">Village / Ward</th>
+                    <th scope="col">Taluka</th>
+                    <th scope="col">District</th>
+                    <th scope="col" class="text-center">Location Status</th>
+                    <th scope="col" class="text-center">Accuracy</th>
+                    <th scope="col" class="text-center">Photos</th>
+                    <th scope="col" class="text-end" style="width: 140px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for acc in accused_list %}
+                <tr>
+                    <td>
+                        <a href="{% url 'accused_detail' pk=acc.pk %}" class="font-monospace fw-bold text-primary text-decoration-none">
+                            {{ acc.record_id }}
+                        </a>
+                    </td>
+                    <td>
+                        <a href="{% url 'accused_detail' pk=acc.pk %}" class="fw-bold text-dark text-decoration-none">
+                            {{ acc.full_name }}
+                        </a>
+                    </td>
+                    <td>
+                        <span class="font-monospace small text-muted">{{ acc.formatted_mobile }}</span>
+                    </td>
+                    <td class="small">{{ acc.village }}</td>
+                    <td class="small">{{ acc.taluka }}</td>
+                    <td>
+                        <span class="badge bg-light text-dark border small">{{ acc.district }}</span>
+                    </td>
+                    <td class="text-center">
+                        <span class="badge badge-status-{{ acc.location_status }}">
+                            {{ acc.get_location_status_display }}
+                        </span>
+                    </td>
+                    <td class="text-center">
+                        <span class="badge badge-accuracy-{{ acc.location_accuracy }} small">
+                            {{ acc.get_location_accuracy_display }}
+                        </span>
+                    </td>
+                    <td class="text-center">
+                        {% if acc.photo_count > 0 %}
+                        <span class="badge badge-primary rounded-pill px-2">
+                            <i class="bi bi-camera me-1"></i>{{ acc.photo_count }}
+                        </span>
+                        {% else %}
+                        <span class="badge bg-light text-muted border rounded-pill px-2">0</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end">
+                        <div class="btn-group btn-group-sm">
+                            <a href="{% url 'accused_detail' pk=acc.pk %}" class="btn btn-outline-primary" title="View Dossier">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            <a href="{% url 'accused_edit' pk=acc.pk %}" class="btn btn-outline-secondary" title="Edit Dossier">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <a href="{% url 'accused_print' pk=acc.pk %}" class="btn btn-outline-secondary" target="_blank" title="Print Record">
+                                <i class="bi bi-printer"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        $('#accusedDataTable').DataTable({
+            pageLength: 10,
+            lengthMenu: [5, 10, 25, 50, 100],
+            responsive: true,
+            language: {
+                search: "_INPUT_",
+                searchPlaceholder: "Search register by name, ID, phone, village...",
+                lengthMenu: "Display _MENU_ dossiers per page",
+                info: "Showing _START_ to _END_ of _TOTAL_ registered dossiers",
+                infoEmpty: "Showing 0 to 0 of 0 dossiers",
+                infoFiltered: "(filtered from _MAX_ total dossiers)",
+                zeroRecords: "No matching criminal records found"
+            },
+            order: [[0, 'desc']],
+            columnDefs: [
+                { orderable: false, targets: [8, 9] }
+            ]
+        });
+    });
+</script>
+{% endblock %}
