@@ -158,7 +158,7 @@
         </tr>
         <tr>
             <th>Verified By Officer</th>
-            <td>{{ accused.verified_by.get_full_name|default:accused.verified_by.username|default:"Pending" }}</td>
+            <td>{% if accused.verified_by %}{{ accused.verified_by.get_full_name|default:accused.verified_by.username }}{% else %}Pending{% endif %}</td>
             <th>Verification Timestamp</th>
             <td>{{ accused.verified_at|date:"d/m/Y h:i A"|default:"Not Verified" }}</td>
         </tr>
@@ -215,7 +215,7 @@
             {% for c in location_checks %}
             <tr>
                 <td class="small">{{ c.timestamp|date:"d/m/Y h:i A" }}</td>
-                <td class="small">{{ c.officer.get_full_name|default:c.officer.username|default:"System" }}</td>
+                <td class="small">{% if c.officer %}{{ c.officer.get_full_name|default:c.officer.username }}{% else %}System{% endif %}</td>
                 <td class="small font-monospace">{{ c.action }}</td>
                 <td class="small">{{ c.location_status }}</td>
                 <td class="small font-monospace">
