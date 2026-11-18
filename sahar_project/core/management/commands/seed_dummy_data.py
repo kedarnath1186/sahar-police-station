@@ -33,9 +33,8 @@ class Command(BaseCommand):
                 'is_staff': True,
             }
         )
-        if not officer.has_usable_password():
-            officer.set_password('police123')
-            officer.save()
+        officer.set_password('police123')
+        officer.save()
 
         # Clear existing dummy records for fresh seeding
         AccusedPhoto.objects.all().delete()
