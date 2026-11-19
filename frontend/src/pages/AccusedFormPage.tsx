@@ -1,23 +1,27 @@
 import { useEffect } from 'react'
+import { useMemo } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { useForm } from 'react-hook-form'
 import { useNavigate, useParams } from 'react-router-dom'
 import type { ReactNode } from 'react'
+import type { TFunction } from 'i18next'
 import { z } from 'zod'
 import { ApiError, api } from '../api'
+import { localizedError, localizedFieldError } from '../errorMessages'
 import type { Accused, FormChoices } from '../types'
 
-const schema = z.object({
-  full_name: z.string().trim().min(1, 'Enter the full name.').max(150),
-  mobile_number: z.string().regex(/^\d{10}$/, 'Enter a 10-digit mobile number.'),
-  detailed_address: z.string().trim().min(1, 'Enter the detailed address.'),
-  village: z.string().trim().min(1, 'Enter the village or locality.').max(100),
-  city: z.string().trim().min(1, 'Enter the city.').max(100),
-  taluka: z.string().trim().min(1, 'Enter the taluka.').max(100),
-  district: z.string().min(1, 'Select a district.'),
-  state: z.string().min(1, 'Select a state.'),
-  pincode: z.string().regex(/^\d{6}$/, 'Enter a 6-digit pincode.'),
+const createSchema = (t: TFunction) => z.object({
+  full_name: z.string().trim().min(1, t('validation.fullName')).max(150),
+  mobile_number: z.string().regex(/^\d{10}$/, t('validation.mobile')),
+  detailed_address: z.string().trim().min(1, t('validation.detailedAddress')),
+  village: z.string().trim().min(1, t('validation.village')).max(100),
+  city: z.string().trim().min(1, t('validation.city')).max(100),
+  taluka: z.string().trim().min(1, t('validation.taluka')).max(100),
+  district: z.string().min(1, t('validation.district')),
+  state: z.string().min(1, t('validation.state')),
+  pincode: z.string().regex(/^\d{6}$/, t('validation.pincode')),
 })
 
 type AccusedValues = z.infer<typeof schema>
@@ -41,6 +45,7 @@ function validationMessages(error: unknown) {
 }
 
 export function AccusedFormPage() {
+  const { t } = useTranslation()
   const { id } = useParams()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -65,6 +70,7 @@ export function AccusedFormPage() {
     state: detailQuery.data.state,
     pincode: detailQuery.data.pincode,
   } : blankValues
+  const schema = useMemo(() => createSchema(t), [t])
   const { register, handleSubmit, setError, reset, formState: { errors } } = useForm<AccusedValues>({
     resolver: zodResolver(schema),
     defaultValues: initialValues,
@@ -95,16 +101,16 @@ export function AccusedFormPage() {
       if (fieldErrors) {
         Object.entries(fieldErrors).forEach(([field, messages]) => {
           if (field in blankValues && messages[0]) {
-            setError(field as keyof AccusedValues, { message: messages[0].message })
+            setError(field as keyof AccusedValues, { message: localizedFieldError(field, t) })
           }
         })
       }
     },
   })
 
-  if (edit && detailQuery.isPending) return <p className="loading-inline">Loading record…</p>
-  if (edit && detailQuery.isError) return <div className="notice error-notice" role="alert">Could not load this accused record.</div>
-  if (choicesQuery.isError) return <div className="notice error-notice" role="alert">Could not load form options.</div>
+  if (edit && detailQuery.isPending) return <p className="loading-inline">{t('common.loadingRecord')}</p>
+  if (edit && detailQuery.isError) return <div className="notice error-notice" role="alert">{t('errors.loadRecord')}</div>
+  if (choicesQuery.isError) return <div className="notice error-notice" role="alert">{t('errors.loadChoices')}</div>
 
   const districts = choicesQuery.data?.districts ?? []
   const states = choicesQuery.data?.states ?? []
@@ -112,60 +118,61 @@ export function AccusedFormPage() {
   return (
     <section>
       <div className="page-heading">
-        <p className="eyebrow">Accused Records</p>
-        <h2>{edit ? 'Edit Accused Record' : 'Register Accused Record'}</h2>
-        <p className="muted-copy">Enter accurate personal and address details. Address changes may clear an existing map location if the new address cannot be geocoded.</p>
+        <p className="eyebrow">{t('accused.directory')}</p>
+        <h2>{edit ? t('accused.edit') : t('accused.register')}</h2>
+        <p className="muted-copy">{t('accused.addressNote')}</p>
       </div>
       <form className="record-form card" onSubmit={handleSubmit((values) => saveMutation.mutate(values))} noValidate>
-        <h3>Personal Identification</h3>
+        <h3>{t('accused.personalHeading')}</h3>
         <div className="form-grid">
-          <FormField label="Full Name" error={errors.full_name?.message}>
+          <FormField label={t('accused.fullName')} error={errors.full_name?.message}>
             <input autoComplete="name" {...register('full_name')} />
           </FormField>
-          <FormField label="Mobile Number" error={errors.mobile_number?.message}>
-            <input inputMode="numeric" maxLength={10} autoComplete="tel-national" {...register('mobile_number')} />
+          <FormField label={t('accused.mobile')} error={errors.mobile_number?.message}>
+            <input inputMode="numeric" maxLength={10} autoComplete="tel-national" placeholder={t('form.mobileHint')} {...register('mobile_number')} />
           </FormField>
         </div>
-        <h3>Residential Address</h3>
+        <h3>{t('accused.addressHeading')}</h3>
         <div className="form-grid">
-          <FormField label="Detailed Address" error={errors.detailed_address?.message} wide>
+          <FormField label={t('accused.detailedAddress')} error={errors.detailed_address?.message} wide>
             <textarea rows={3} {...register('detailed_address')} />
           </FormField>
-          <FormField label="Village / Locality" error={errors.village?.message}>
+          <FormField label={t('accused.village')} error={errors.village?.message}>
             <input {...register('village')} />
           </FormField>
-          <FormField label="City / Town" error={errors.city?.message}>
+          <FormField label={t('accused.city')} error={errors.city?.message}>
             <input {...register('city')} />
           </FormField>
-          <FormField label="Taluka" error={errors.taluka?.message}>
+          <FormField label={t('accused.taluka')} error={errors.taluka?.message}>
             <input {...register('taluka')} />
           </FormField>
-          <FormField label="District" error={errors.district?.message}>
+          <FormField label={t('common.district')} error={errors.district?.message}>
             <select {...register('district')}>
-              <option value="">Select a district</option>
+              <option value="">{t('form.selectDistrict')}</option>
               {districts.map((district) => <option key={district.value} value={district.value}>{district.label}</option>)}
             </select>
           </FormField>
-          <FormField label="State / Union Territory" error={errors.state?.message}>
+          <FormField label={t('accused.state')} error={errors.state?.message}>
             <select {...register('state')}>
+              <option value="">{t('form.selectState')}</option>
               {states.map((state) => <option key={state.value} value={state.value}>{state.label}</option>)}
             </select>
           </FormField>
-          <FormField label="Pincode" error={errors.pincode?.message}>
-            <input inputMode="numeric" maxLength={6} autoComplete="postal-code" {...register('pincode')} />
+          <FormField label={t('accused.pincode')} error={errors.pincode?.message}>
+            <input inputMode="numeric" maxLength={6} autoComplete="postal-code" placeholder={t('form.pincodeHint')} {...register('pincode')} />
           </FormField>
         </div>
         {saveMutation.isError && !validationMessages(saveMutation.error) && (
-          <div className="notice error-notice" role="alert">{saveMutation.error.message}</div>
+          <div className="notice error-notice" role="alert">{localizedError(saveMutation.error, t)}</div>
         )}
         {saveMutation.isError && validationMessages(saveMutation.error)?.__all__?.map((message) => (
-          <div key={message.message} className="notice error-notice" role="alert">{message.message}</div>
+          <div key={message.message} className="notice error-notice" role="alert">{t('errors.requestFailed')}</div>
         ))}
         <div className="form-actions">
           <button className="primary-button" disabled={saveMutation.isPending} type="submit">
-            {saveMutation.isPending ? 'Saving…' : edit ? 'Save Changes' : 'Save and Geocode'}
+            {saveMutation.isPending ? t('accused.savingRecord') : edit ? t('accused.saveChanges') : t('accused.saveGeocode')}
           </button>
-          <button className="secondary-button" type="button" onClick={() => navigate(edit ? `/accused/${id}` : '/accused')}>Cancel</button>
+          <button className="secondary-button" type="button" onClick={() => navigate(edit ? `/accused/${id}` : '/accused')}>{t('common.cancel')}</button>
         </div>
       </form>
     </section>

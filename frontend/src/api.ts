@@ -1,3 +1,5 @@
+import i18n from './i18n'
+
 export class ApiError extends Error {
   readonly status: number
   readonly data: unknown
@@ -14,6 +16,21 @@ export class ApiError extends Error {
   }
 }
 
+function responseError(status: number, data: unknown) {
+  if (status === 401) return i18n.t('errors.invalidLogin')
+  if (status === 403) return i18n.t('errors.forbidden')
+  if (status === 404) return i18n.t('errors.notFound')
+  if (status === 429) return i18n.t('errors.lockedOut')
+  const detail = (data as { detail?: string | string[] } | null)?.detail
+  const text = Array.isArray(detail) ? detail.join(' ').toLowerCase() : detail?.toLowerCase() ?? ''
+  if (text.includes('invalid coordinates')) return i18n.t('errors.invalidCoordinates')
+  if (text.includes('within india') || text.includes('reside within india')) return i18n.t('errors.outsideIndia')
+  if (text.includes('without established coordinates')) return i18n.t('errors.noCoordinates')
+  if (text.includes('image') || text.includes('photo')) return i18n.t('errors.uploadFailed')
+  if (text.includes('lockout') || text.includes('failed login attempts')) return i18n.t('errors.lockedOut')
+  return i18n.t('errors.requestFailed')
+}
+
 function cookieValue(name: string) {
   return document.cookie
     .split('; ')
@@ -25,10 +42,10 @@ async function csrfToken() {
   let token = cookieValue('csrftoken')
   if (!token) {
     const response = await fetch('/api/auth/csrf/', { credentials: 'same-origin' })
-    if (!response.ok) throw new ApiError('Unable to initialize secure session.', response.status, null)
+    if (!response.ok) throw new ApiError(i18n.t('errors.requestFailed'), response.status, null)
     token = cookieValue('csrftoken')
   }
-  if (!token) throw new ApiError('Unable to initialize secure session.', 0, null)
+  if (!token) throw new ApiError(i18n.t('errors.requestFailed'), 0, null)
   return decodeURIComponent(token)
 }
 
@@ -55,8 +72,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   if (response.status === 204) return undefined as T
   const data = await response.json().catch(() => null)
   if (!response.ok) {
-    const message = typeof data?.detail === 'string' ? data.detail : 'The request could not be completed.'
-    throw new ApiError(message, response.status, data)
+    throw new ApiError(responseError(response.status, data), response.status, data)
   }
   return data as T
 }

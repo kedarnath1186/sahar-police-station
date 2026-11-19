@@ -1,5 +1,6 @@
-import { lazy, Suspense, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { Link, Navigate, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { ApiError, api } from './api'
 import { LoginPage } from './pages/LoginPage'
@@ -22,20 +23,24 @@ type User = {
 }
 
 const navigation = [
-  { to: '/', label: 'Dashboard', symbol: '◈' },
-  { to: '/accused/new', label: 'Add Accused', symbol: '+' },
-  { to: '/accused', label: 'View Accused', symbol: '♙' },
-  { to: '/map', label: 'Map View', symbol: '⌖' },
-  { to: '/table', label: 'Table View', symbol: '▦' },
-  { to: '/places/new', label: 'Add Famous Place', symbol: '⌂' },
-  { to: '/places', label: 'Famous Places', symbol: '⌑' },
+  { to: '/', label: 'nav.dashboard', symbol: '◈' },
+  { to: '/accused/new', label: 'nav.addAccused', symbol: '+' },
+  { to: '/accused', label: 'nav.viewAccused', symbol: '♙' },
+  { to: '/map', label: 'nav.mapView', symbol: '⌖' },
+  { to: '/table', label: 'nav.tableView', symbol: '▦' },
+  { to: '/places/new', label: 'nav.addPlace', symbol: '⌂' },
+  { to: '/places', label: 'nav.places', symbol: '⌑' },
 ]
 
 function ProtectedLayout() {
+  const { t, i18n } = useTranslation()
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const location = useLocation()
   const [menuOpen, setMenuOpen] = useState(false)
+  useEffect(() => {
+    document.documentElement.lang = i18n.language
+  }, [i18n.language])
   const userQuery = useQuery<User | null>({
     queryKey: ['current-user'],
     queryFn: async () => {
@@ -55,9 +60,23 @@ function ProtectedLayout() {
       navigate('/login', { replace: true })
     },
   })
+  const activeNavigation = navigation.find((item) => item.to === location.pathname)
+  const pageTitle = activeNavigation
+    ? t(activeNavigation.label)
+    : location.pathname.endsWith('/edit')
+      ? t('accused.edit')
+      : location.pathname.includes('/photos')
+        ? t('photos.title')
+        : location.pathname.startsWith('/accused/')
+          ? t('accused.record')
+          : location.pathname.startsWith('/places/')
+            ? t('places.edit')
+            : location.pathname.startsWith('/print/')
+              ? t('print.title')
+              : t('app.station')
 
   if (userQuery.isPending) {
-    return <main className="loading-screen" aria-live="polite">Loading…</main>
+    return <main className="loading-screen" aria-live="polite">{t('common.loading')}</main>
   }
   if (!userQuery.data) {
     return <Navigate to="/login" replace state={{ from: location.pathname }} />
@@ -68,18 +87,18 @@ function ProtectedLayout() {
       <button
         className={`sidebar-backdrop ${menuOpen ? 'is-visible' : ''}`}
         type="button"
-        aria-label="Close navigation menu"
+        aria-label={t('nav.close')}
         onClick={() => setMenuOpen(false)}
       />
       <aside className={`sidebar ${menuOpen ? 'is-open' : ''}`}>
         <Link className="brand" to="/" onClick={() => setMenuOpen(false)}>
-          <img src="/static/img/maharashtra_police_logo.png" alt="Maharashtra Police" />
-          <span className="brand-force">Maharashtra Police</span>
-          <strong>Sahar Police Station</strong>
-          <span className="brand-local">सहार पोलीस ठाणे</span>
-          <span className="brand-address">IA Project Road, Navpada, Sahar Village, Andheri East, Mumbai</span>
+          <img src="/static/img/maharashtra_police_logo.png" alt={t('app.logoAlt')} />
+          <span className="brand-force">{t('app.force')}</span>
+          <strong>{t('app.station')}</strong>
+          <span className="brand-local">{t('app.localStation')}</span>
+          <span className="brand-address">{t('app.address')}</span>
         </Link>
-        <nav className="primary-nav" aria-label="Main navigation">
+        <nav className="primary-nav"         aria-label={t('nav.open')}>
           {navigation.map((item) => (
             <Link
               key={item.to}
@@ -88,7 +107,7 @@ function ProtectedLayout() {
               onClick={() => setMenuOpen(false)}
             >
               <span className="nav-symbol" aria-hidden="true">{item.symbol}</span>
-              <span>{item.label}</span>
+              <span>{t(item.label)}</span>
             </Link>
           ))}
         </nav>
@@ -101,9 +120,9 @@ function ProtectedLayout() {
             onClick={() => logoutMutation.mutate()}
             disabled={logoutMutation.isPending}
           >
-            {logoutMutation.isPending ? 'Signing out…' : 'Logout'}
+            {logoutMutation.isPending ? t('nav.signingOut') : t('nav.logout')}
           </button>
-          {logoutMutation.isError && <p className="inline-error">Could not log out. Please try again.</p>}
+          {logoutMutation.isError && <p className="inline-error">{t('errors.logoutFailed')}</p>}
         </div>
       </aside>
 
@@ -112,7 +131,7 @@ function ProtectedLayout() {
           <button
             type="button"
             className="menu-toggle"
-            aria-label="Open navigation menu"
+            aria-label={t('nav.main')}
             aria-expanded={menuOpen}
             onClick={() => setMenuOpen(true)}
           >
@@ -121,10 +140,29 @@ function ProtectedLayout() {
             <span />
           </button>
           <div className="topbar-titles">
-            <p className="topbar-eyebrow">Maharashtra Police</p>
-            <h1>{navigation.find((item) => item.to === location.pathname)?.label ?? 'Sahar Police Station'}</h1>
+            <p className="topbar-eyebrow">{t('app.force')}</p>
+            <h1>{pageTitle}</h1>
           </div>
-          <div className="officer-chip"><span aria-hidden="true">●</span> {userQuery.data.username}</div>
+          <div className="topbar-tools">
+            <label className="language-picker">
+              <span className="visually-hidden">{t('language.label')}</span>
+              <select
+                aria-label={t('language.label')}
+                value={i18n.resolvedLanguage ?? 'en'}
+                onChange={(event) => {
+                  const language = event.target.value
+                  void i18n.changeLanguage(language)
+                  window.localStorage.setItem('language', language)
+                  document.documentElement.lang = language
+                }}
+              >
+                <option value="en">{t('language.english')}</option>
+                <option value="mr">{t('language.marathi')}</option>
+                <option value="hi">{t('language.hindi')}</option>
+              </select>
+            </label>
+            <div className="officer-chip"><span aria-hidden="true">●</span> {t('app.officer')}: {userQuery.data.username}</div>
+          </div>
         </header>
         <main className="page-content"><Outlet /></main>
       </div>
@@ -133,7 +171,8 @@ function ProtectedLayout() {
 }
 
 function NotFound() {
-  return <section className="card"><h2>Page not found</h2><Link to="/">Return to dashboard</Link></section>
+  const { t } = useTranslation()
+  return <section className="card"><h2>{t('common.pageNotFound')}</h2><Link to="/">{t('common.returnDashboard')}</Link></section>
 }
 
 function App() {

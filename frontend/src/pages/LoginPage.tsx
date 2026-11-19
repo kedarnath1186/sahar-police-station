@@ -1,11 +1,13 @@
+import { useMemo } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { useTranslation } from 'react-i18next'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
-import { ApiError } from '../api'
+import { localizedError } from '../errorMessages'
 
-const loginSchema = z.object({
-  username: z.string().trim().min(1, 'Enter your username.'),
-  password: z.string().min(1, 'Enter your password.'),
+const loginSchema = (required: (key: string) => string) => z.object({
+  username: z.string().trim().min(1, required('auth.usernameRequired')),
+  password: z.string().min(1, required('auth.passwordRequired')),
 })
 
 type Credentials = z.infer<typeof loginSchema>
@@ -17,21 +19,23 @@ type LoginPageProps = {
 }
 
 export function LoginPage({ onSubmit, error, submitting }: LoginPageProps) {
+  const { t } = useTranslation()
+  const schema = useMemo(() => loginSchema((key) => t(key)), [t])
   const { register, handleSubmit, formState: { errors } } = useForm<Credentials>({
-    resolver: zodResolver(loginSchema),
+    resolver: zodResolver(schema),
     defaultValues: { username: '', password: '' },
   })
-  const serverError = error instanceof ApiError ? error.message : error?.message
+  const serverError = error ? localizedError(error, t) : null
 
   return (
     <main className="login-page">
       <section className="login-card" aria-labelledby="login-title">
-        <img className="login-logo" src="/static/img/maharashtra_police_logo.png" alt="Maharashtra Police" />
-        <p className="eyebrow">Maharashtra Police</p>
-        <h1 id="login-title">Sahar Police Station</h1>
-        <p className="login-subtitle">Officer sign in</p>
+        <img className="login-logo" src="/static/img/maharashtra_police_logo.png" alt={t('app.logoAlt')} />
+        <p className="eyebrow">{t('app.force')}</p>
+        <h1 id="login-title">{t('app.station')}</h1>
+        <p className="login-subtitle">{t('auth.signIn')}</p>
         <form className="login-form" onSubmit={handleSubmit((values) => onSubmit(values))} noValidate>
-          <label htmlFor="username">Username</label>
+          <label htmlFor="username">{t('auth.username')}</label>
           <input
             id="username"
             autoComplete="username"
@@ -41,7 +45,7 @@ export function LoginPage({ onSubmit, error, submitting }: LoginPageProps) {
             {...register('username')}
           />
           {errors.username && <span className="field-error" id="username-error">{errors.username.message}</span>}
-          <label htmlFor="password">Password</label>
+          <label htmlFor="password">{t('auth.password')}</label>
           <input
             id="password"
             type="password"
@@ -53,10 +57,10 @@ export function LoginPage({ onSubmit, error, submitting }: LoginPageProps) {
           {errors.password && <span className="field-error" id="password-error">{errors.password.message}</span>}
           {serverError && <div role="alert" className="form-error">{serverError}</div>}
           <button className="primary-button login-submit" type="submit" disabled={submitting}>
-            {submitting ? 'Signing in…' : 'Sign in'}
+            {submitting ? t('auth.submitting') : t('auth.submit')}
           </button>
         </form>
-        <p className="login-local">सहार पोलीस ठाणे</p>
+        <p className="login-local">{t('app.localStation')}</p>
       </section>
     </main>
   )
