@@ -55,6 +55,13 @@ class APIAuthenticationTests(TestCase):
             with self.subTest(endpoint=endpoint):
                 self.assertEqual(self.client.get(endpoint).status_code, 403)
 
+    def test_form_choices_come_from_model_choice_constants(self):
+        self.client.force_login(self.user)
+        response = self.client.get(reverse('api_form_choices'))
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('Mumbai Suburban', {choice['value'] for choice in response.json()['districts']})
+        self.assertIn('verified', {choice['value'] for choice in response.json()['statuses']})
+
     def test_api_login_enforces_five_failures_per_fifteen_minutes(self):
         for attempt in range(5):
             response = self.client.post(

@@ -1,8 +1,15 @@
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, Navigate, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { ApiError, api } from './api'
 import { LoginPage } from './pages/LoginPage'
+
+const AccusedDetailPage = lazy(() => import('./pages/AccusedDetailPage').then((module) => ({ default: module.AccusedDetailPage })))
+const AccusedFormPage = lazy(() => import('./pages/AccusedFormPage').then((module) => ({ default: module.AccusedFormPage })))
+const AccusedListPage = lazy(() => import('./pages/AccusedListPage').then((module) => ({ default: module.AccusedListPage })))
+const AccusedMapPage = lazy(() => import('./pages/AccusedMapPage').then((module) => ({ default: module.AccusedMapPage })))
+const DashboardPage = lazy(() => import('./pages/DashboardPage').then((module) => ({ default: module.DashboardPage })))
+const PrintRecordPage = lazy(() => import('./pages/PrintRecordPage').then((module) => ({ default: module.PrintRecordPage })))
 
 type User = {
   id: number
@@ -149,28 +156,30 @@ function App() {
   })
 
   return (
+    <Suspense fallback={<main className="loading-screen" aria-live="polite">Loading…</main>}>
     <Routes>
       <Route
         path="/login"
         element={<LoginPage onSubmit={loginMutation.mutateAsync} error={loginMutation.error} submitting={loginMutation.isPending} />}
       />
       <Route element={<ProtectedLayout />}>
-        <Route index element={<PlaceholderPage title="Dashboard" />} />
-        <Route path="accused" element={<PlaceholderPage title="View Accused" />} />
-        <Route path="accused/new" element={<PlaceholderPage title="Add Accused" />} />
-        <Route path="accused/:id" element={<PlaceholderPage title="Accused Record" />} />
-        <Route path="accused/:id/edit" element={<PlaceholderPage title="Edit Accused" />} />
-        <Route path="accused/:id/delete" element={<PlaceholderPage title="Delete Accused" />} />
+        <Route index element={<DashboardPage />} />
+        <Route path="accused" element={<AccusedListPage />} />
+        <Route path="accused/new" element={<AccusedFormPage />} />
+        <Route path="accused/:id" element={<AccusedDetailPage />} />
+        <Route path="accused/:id/edit" element={<AccusedFormPage />} />
+        <Route path="accused/:id/delete" element={<AccusedDetailPage />} />
         <Route path="accused/:id/photos" element={<PlaceholderPage title="Accused Photos" />} />
-        <Route path="map" element={<PlaceholderPage title="Map View" />} />
+        <Route path="map" element={<AccusedMapPage />} />
         <Route path="table" element={<PlaceholderPage title="Table View" />} />
         <Route path="places" element={<PlaceholderPage title="Famous Places" />} />
         <Route path="places/new" element={<PlaceholderPage title="Add Famous Place" />} />
         <Route path="places/:id/edit" element={<PlaceholderPage title="Edit Famous Place" />} />
-        <Route path="print/:id" element={<PlaceholderPage title="Print Record" />} />
+        <Route path="print/:id" element={<PrintRecordPage />} />
         <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>
+    </Suspense>
   )
 }
 

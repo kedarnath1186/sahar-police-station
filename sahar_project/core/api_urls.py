@@ -7,6 +7,7 @@ urlpatterns = [
     path('auth/login/', api_views.login_api, name='api_login'),
     path('auth/logout/', api_views.logout_api, name='api_logout'),
     path('auth/me/', api_views.current_user, name='api_current_user'),
+    path('choices/', api_views.form_choices, name='api_form_choices'),
     path('dashboard/', api_views.dashboard_api, name='api_dashboard'),
     path('accused/', api_views.accused_collection, name='api_accused_collection'),
     path('accused/table/', api_views.accused_table, name='api_accused_table'),

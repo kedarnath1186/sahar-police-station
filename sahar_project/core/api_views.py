@@ -13,6 +13,13 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from accused.models import Accused, AccusedPhoto
+from core.constants import (
+    ACCURACY_RADIUS_METERS,
+    INDIAN_STATES_CHOICES,
+    LOCATION_ACCURACY_CHOICES,
+    LOCATION_STATUS_CHOICES,
+    MAHARASHTRA_DISTRICTS_CHOICES,
+)
 from core.authentication import authenticate_officer
 from places.models import FamousPlace
 
@@ -185,6 +192,17 @@ def logout_api(request):
 @api_view(['GET'])
 def current_user(request):
     return Response(_user_json(request.user))
+
+
+@api_view(['GET'])
+def form_choices(request):
+    return Response({
+        'districts': [{'value': value, 'label': label} for value, label in MAHARASHTRA_DISTRICTS_CHOICES],
+        'states': [{'value': value, 'label': label} for value, label in INDIAN_STATES_CHOICES],
+        'statuses': [{'value': value, 'label': label} for value, label in LOCATION_STATUS_CHOICES],
+        'accuracies': [{'value': value, 'label': label} for value, label in LOCATION_ACCURACY_CHOICES],
+        'accuracy_radii': ACCURACY_RADIUS_METERS,
+    })
 
 
 @api_view(['GET'])

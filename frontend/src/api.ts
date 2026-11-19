@@ -46,7 +46,11 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     method,
     headers,
     credentials: 'same-origin',
-    body: options.body instanceof FormData ? options.body : options.body ? JSON.stringify(options.body) : undefined,
+    body: options.body instanceof FormData || typeof options.body === 'string'
+      ? options.body
+      : options.body
+        ? JSON.stringify(options.body)
+        : undefined,
   })
   if (response.status === 204) return undefined as T
   const data = await response.json().catch(() => null)
