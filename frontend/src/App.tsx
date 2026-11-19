@@ -8,8 +8,12 @@ const AccusedDetailPage = lazy(() => import('./pages/AccusedDetailPage').then((m
 const AccusedFormPage = lazy(() => import('./pages/AccusedFormPage').then((module) => ({ default: module.AccusedFormPage })))
 const AccusedListPage = lazy(() => import('./pages/AccusedListPage').then((module) => ({ default: module.AccusedListPage })))
 const AccusedMapPage = lazy(() => import('./pages/AccusedMapPage').then((module) => ({ default: module.AccusedMapPage })))
+const AccusedTablePage = lazy(() => import('./pages/AccusedTablePage').then((module) => ({ default: module.AccusedTablePage })))
+const AccusedPhotosPage = lazy(() => import('./pages/AccusedPhotosPage').then((module) => ({ default: module.AccusedPhotosPage })))
 const DashboardPage = lazy(() => import('./pages/DashboardPage').then((module) => ({ default: module.DashboardPage })))
 const PrintRecordPage = lazy(() => import('./pages/PrintRecordPage').then((module) => ({ default: module.PrintRecordPage })))
+const PlacesPage = lazy(() => import('./pages/PlacesPage').then((module) => ({ default: module.PlacesPage })))
+const PlaceFormPage = lazy(() => import('./pages/PlaceFormPage').then((module) => ({ default: module.PlaceFormPage })))
 
 type User = {
   id: number
@@ -128,15 +132,6 @@ function ProtectedLayout() {
   )
 }
 
-function PlaceholderPage({ title }: { title: string }) {
-  return (
-    <section className="page-heading">
-      <p className="eyebrow">Sahar Police Station</p>
-      <h2>{title}</h2>
-    </section>
-  )
-}
-
 function NotFound() {
   return <section className="card"><h2>Page not found</h2><Link to="/">Return to dashboard</Link></section>
 }
@@ -169,12 +164,12 @@ function App() {
         <Route path="accused/:id" element={<AccusedDetailPage />} />
         <Route path="accused/:id/edit" element={<AccusedFormPage />} />
         <Route path="accused/:id/delete" element={<AccusedDetailPage />} />
-        <Route path="accused/:id/photos" element={<PlaceholderPage title="Accused Photos" />} />
+        <Route path="accused/:id/photos" element={<AccusedPhotosPage />} />
         <Route path="map" element={<AccusedMapPage />} />
-        <Route path="table" element={<PlaceholderPage title="Table View" />} />
-        <Route path="places" element={<PlaceholderPage title="Famous Places" />} />
-        <Route path="places/new" element={<PlaceholderPage title="Add Famous Place" />} />
-        <Route path="places/:id/edit" element={<PlaceholderPage title="Edit Famous Place" />} />
+        <Route path="table" element={<AccusedTablePage />} />
+        <Route path="places" element={<PlacesPage />} />
+        <Route path="places/new" element={<PlaceFormPage />} />
+        <Route path="places/:id/edit" element={<PlaceFormPage />} />
         <Route path="print/:id" element={<PrintRecordPage />} />
         <Route path="*" element={<NotFound />} />
       </Route>

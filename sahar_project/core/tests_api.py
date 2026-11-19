@@ -1,11 +1,15 @@
 import json
+import io
+import tempfile
 from unittest.mock import patch
 
 from django.contrib.auth.models import User
-from django.test import Client, TestCase
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import Client, TestCase, override_settings
 from django.urls import reverse
+from PIL import Image
 
-from accused.models import Accused, LocationCheck
+from accused.models import Accused, AccusedPhoto, LocationCheck
 from core.models import AuditLog, LoginAttempt
 from places.models import FamousPlace
 
@@ -51,6 +55,12 @@ class APIAuthenticationTests(TestCase):
             reverse('api_accused_map'),
             reverse('api_accused_table'),
             reverse('api_place_collection'),
+            reverse('api_accused_detail', args=[1]),
+            reverse('api_accused_photos', args=[1]),
+            reverse('api_photo_detail', args=[1]),
+            reverse('api_verify_accused', args=[1]),
+            reverse('api_set_accused_location', args=[1]),
+            reverse('api_place_detail', args=[1]),
         ):
             with self.subTest(endpoint=endpoint):
                 self.assertEqual(self.client.get(endpoint).status_code, 403)
@@ -182,6 +192,71 @@ class APIRecordTests(TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIn('mobile_number', response.json()['errors'])
 
+    def test_accused_update_and_delete(self):
+        response = self.client.patch(
+            reverse('api_accused_detail', args=[self.accused.pk]),
+            data=json.dumps({
+                'full_name': 'Updated Person',
+                'mobile_number': self.accused.mobile_number,
+                'detailed_address': self.accused.detailed_address,
+                'village': self.accused.village,
+                'city': self.accused.city,
+                'taluka': self.accused.taluka,
+                'district': self.accused.district,
+                'state': self.accused.state,
+                'pincode': self.accused.pincode,
+            }),
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 200, response.content)
+        self.accused.refresh_from_db()
+        self.assertEqual(self.accused.full_name, 'Updated Person')
+        self.assertEqual(self.accused.location_status, 'manually_set')
+
+        deleted = self.client.delete(reverse('api_accused_detail', args=[self.accused.pk]))
+        self.assertEqual(deleted.status_code, 204)
+        self.assertFalse(Accused.objects.filter(pk=self.accused.pk).exists())
+        self.assertTrue(AuditLog.objects.filter(action='delete', object_id=self.accused.pk).exists())
+
+    def test_accused_photo_upload_update_delete_reuses_upload_validation(self):
+        with tempfile.TemporaryDirectory() as media_root:
+            with override_settings(MEDIA_ROOT=media_root):
+                image_data = io.BytesIO()
+                Image.new('RGB', (32, 32), color='blue').save(image_data, format='PNG')
+                upload = SimpleUploadedFile('field.png', image_data.getvalue(), content_type='image/png')
+                response = self.client.post(
+                    reverse('api_accused_photos', args=[self.accused.pk]),
+                    {
+                        'image': upload,
+                        'location_address': 'Sahar Field Office',
+                        'latitude': '19.0988',
+                        'longitude': '72.8711',
+                        'caption': 'Field image',
+                    },
+                )
+                self.assertEqual(response.status_code, 200, response.content)
+                photo = AccusedPhoto.objects.get(accused=self.accused)
+                self.assertEqual(response.json()['id'], photo.pk)
+
+                updated = self.client.patch(
+                    reverse('api_photo_detail', args=[photo.pk]),
+                    data=json.dumps({
+                        'location_address': 'Updated location',
+                        'latitude': 19.1,
+                        'longitude': 72.9,
+                        'caption': 'Updated caption',
+                    }),
+                    content_type='application/json',
+                )
+                self.assertEqual(updated.status_code, 200, updated.content)
+                photo.refresh_from_db()
+                self.assertEqual(photo.caption, 'Updated caption')
+
+                deleted = self.client.delete(reverse('api_photo_detail', args=[photo.pk]))
+                self.assertEqual(deleted.status_code, 204)
+                self.assertFalse(AccusedPhoto.objects.filter(pk=photo.pk).exists())
+                self.assertTrue(AuditLog.objects.filter(model_name='AccusedPhoto', action='delete').exists())
+
     @patch('places.views.geocode_address', return_value=(18.5204, 73.8567))
     def test_famous_place_api_create_and_update(self, mock_geocode):
         payload = {
@@ -210,3 +285,6 @@ class APIRecordTests(TestCase):
         self.assertEqual(updated.status_code, 200, updated.content)
         place.refresh_from_db()
         self.assertEqual(place.name, 'Renamed Place')
+        deleted = self.client.delete(reverse('api_place_detail', args=[place.pk]))
+        self.assertEqual(deleted.status_code, 204)
+        self.assertFalse(FamousPlace.objects.filter(pk=place.pk).exists())
