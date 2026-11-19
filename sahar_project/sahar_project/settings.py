@@ -26,7 +26,11 @@ ALLOWED_HOSTS = [
     for h in os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
     if h.strip()
 ]
+CSRF_TRUSTED_ORIGINS = [
+    o.strip() for o in os.environ.get('CSRF_TRUSTED_ORIGINS', '').split(',') if o.strip()
+]
 
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 # Application definition
 INSTALLED_APPS = [
     'django.contrib.admin',
