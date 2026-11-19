@@ -12,6 +12,7 @@ urlpatterns = [
     path('', include('core.urls')),
     path('accused/', include('accused.urls')),
     path('places/', include('places.urls')),
+    path('api/', include('core.api_urls')),
 ]
 
 handler403 = 'core.views.custom_403'

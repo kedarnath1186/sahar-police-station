@@ -1,26 +1,16 @@
-from datetime import timedelta
 from django.conf import settings
 from django.contrib import messages
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count
 from django.http import Http404
 from django.shortcuts import render, redirect
-from django.utils import timezone
 from django.views.decorators.http import require_POST
 from django.views.static import serve as static_serve
 
 from accused.models import Accused, AccusedPhoto
-from core.models import LoginAttempt
+from core.authentication import authenticate_officer, get_client_ip
 from places.models import FamousPlace
-
-
-def get_client_ip(request):
-    """Retrieves client IP address from request headers."""
-    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-    if x_forwarded_for:
-        return x_forwarded_for.split(',')[0].strip()
-    return request.META.get('REMOTE_ADDR')
 
 
 def login_view(request):
@@ -34,53 +24,17 @@ def login_view(request):
         return redirect('dashboard')
 
     error = None
-    timeout_minutes = getattr(settings, 'LOGIN_ATTEMPTS_TIMEOUT_MINUTES', 15)
-    max_attempts = getattr(settings, 'LOGIN_ATTEMPTS_LIMIT', 5)
-
     if request.method == 'POST':
         username = request.POST.get('username', '').strip()
         password = request.POST.get('password', '')
-        client_ip = get_client_ip(request)
-
-        # Check failed attempts in the last 15 minutes for this username
-        since_time = timezone.now() - timedelta(minutes=timeout_minutes)
-        recent_failures = LoginAttempt.objects.filter(
-            username=username,
-            successful=False,
-            timestamp__gte=since_time,
-        ).count()
-
-        if recent_failures >= max_attempts:
-            error = (
-                f"Security lockout: Too many failed login attempts for '{username}'. "
-                f"Please wait {timeout_minutes} minutes before trying again."
-            )
-            return render(request, 'core/login.html', {'error': error, 'locked': True})
-
-        user = authenticate(request, username=username, password=password)
+        user, error, locked = authenticate_officer(request, username, password)
 
         if user is not None:
-            # Record success and log user in
-            LoginAttempt.objects.create(
-                username=username,
-                ip_address=client_ip,
-                successful=True,
-            )
             login(request, user)
             next_url = request.GET.get('next', '/')
             return redirect(next_url)
-        else:
-            # Record failed attempt
-            LoginAttempt.objects.create(
-                username=username,
-                ip_address=client_ip,
-                successful=False,
-            )
-            remaining = max(0, max_attempts - (recent_failures + 1))
-            if remaining > 0:
-                error = f"Invalid username or password. {remaining} attempt(s) remaining before temporary lockout."
-            else:
-                error = f"Security lockout: Too many failed login attempts. Please wait {timeout_minutes} minutes."
+        if locked:
+            return render(request, 'core/login.html', {'error': error, 'locked': True})
 
     return render(request, 'core/login.html', {'error': error})
 
