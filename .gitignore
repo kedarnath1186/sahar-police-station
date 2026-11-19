@@ -6,3 +6,4 @@ media/
 __pycache__/
 *.pyc
 sahar_project/stray_copies/
+sahar_project/static/frontend/
