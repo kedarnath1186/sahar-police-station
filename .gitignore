@@ -1,9 +1,25 @@
-﻿venv/
+﻿# Environments and secrets
 .env
 *.env
+.env.local
+
+# Database
 db.sqlite3
-media/
+*.db
+*.db-journal
+
+# Node
+node_modules/
+dist/
+server/dist/
+frontend/dist/
+*.log
+
+# Python / legacy
+venv/
 __pycache__/
 *.pyc
-sahar_project/stray_copies/
-sahar_project/static/frontend/
+
+# Uploads
+media/
+server/media/

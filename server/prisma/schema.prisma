@@ -1,0 +1,127 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              Int             @id @default(autoincrement())
+  username        String          @unique
+  password        String
+  fullName        String          @default("")
+  isStaff         Boolean         @default(false)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  verifiedAccused Accused[]       @relation("VerifiedAccused")
+  locationChecks  LocationCheck[]
+  auditLogs       AuditLog[]
+}
+
+model Accused {
+  id                  Int             @id @default(autoincrement())
+  fullName            String
+  mobileNumber        String
+  detailedAddress     String
+  village             String
+  city                String
+  taluka              String
+  district            String
+  state               String          @default("Maharashtra")
+  pincode             String
+  latitude            Float?
+  longitude           Float?
+  locationStatus      String          @default("not_geocoded")
+  locationAccuracy    String          @default("unknown")
+  geocodedQuery       String          @default("")
+  geocodedDisplayName String          @default("")
+  geocodedAt          DateTime?
+  verifiedById        Int?
+  verifiedBy          User?           @relation("VerifiedAccused", fields: [verifiedById], references: [id], onDelete: SetNull)
+  verifiedAt          DateTime?
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+  photos              AccusedPhoto[]
+  locationChecks      LocationCheck[]
+}
+
+model AccusedPhoto {
+  id              Int      @id @default(autoincrement())
+  accusedId       Int
+  accused         Accused  @relation(fields: [accusedId], references: [id], onDelete: Cascade)
+  image           String
+  locationAddress String
+  latitude        Float
+  longitude       Float
+  caption         String   @default("")
+  uploadedAt      DateTime @default(now())
+}
+
+model LocationCheck {
+  id               Int      @id @default(autoincrement())
+  accusedId        Int
+  accused          Accused  @relation(fields: [accusedId], references: [id], onDelete: Cascade)
+  officerId        Int?
+  officer          User?    @relation(fields: [officerId], references: [id], onDelete: SetNull)
+  action           String
+  latitude         Float?
+  longitude        Float?
+  locationStatus   String
+  locationAccuracy String
+  note             String   @default("")
+  timestamp        DateTime @default(now())
+}
+
+model AuditLog {
+  id          Int      @id @default(autoincrement())
+  userId      Int?
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action      String
+  modelName   String
+  objectId    Int
+  description String   @default("")
+  timestamp   DateTime @default(now())
+}
+
+model GeocodeCache {
+  id              Int      @id @default(autoincrement())
+  normalizedQuery String   @unique
+  success         Boolean  @default(false)
+  latitude        Float?
+  longitude       Float?
+  accuracy        String   @default("unknown")
+  displayName     String   @default("")
+  rawJson         String   @default("")
+  createdAt       DateTime @default(now())
+}
+
+model LoginAttempt {
+  id         Int      @id @default(autoincrement())
+  username   String
+  ipAddress  String?
+  timestamp  DateTime @default(now())
+  successful Boolean  @default(false)
+
+  @@index([username, timestamp])
+}
+
+model FamousPlace {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String
+  city        String
+  district    String
+  address     String
+  latitude    Float?
+  longitude   Float?
+  photo       String?
+}
+
+model Session {
+  id        String   @id
+  sid       String   @unique
+  data      String
+  expiresAt DateTime
+}
