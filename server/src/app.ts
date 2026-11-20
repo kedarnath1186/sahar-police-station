@@ -100,10 +100,6 @@ app.use('/api/places', placesRouter)
 if (fs.existsSync(STATIC_DIR)) {
   app.use('/static', express.static(STATIC_DIR))
 }
-const legacyStatic = path.resolve(STATIC_DIR, '../legacy-django/static')
-if (fs.existsSync(legacyStatic)) {
-  app.use('/static', express.static(legacyStatic))
-}
 const frontendPublic = path.resolve(STATIC_DIR, '../frontend/public/static')
 if (fs.existsSync(frontendPublic)) {
   app.use('/static', express.static(frontendPublic))

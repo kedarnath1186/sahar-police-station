@@ -27,11 +27,5 @@ mediaRouter.get('/*', (req, res) => {
     return res.sendFile(filePath)
   }
 
-  // Fallback to legacy-django media folder if file exists there
-  const legacyMediaFile = path.resolve(MEDIA_DIR, '../legacy-django/media', safePath)
-  if (fs.existsSync(legacyMediaFile) && fs.statSync(legacyMediaFile).isFile()) {
-    return res.sendFile(legacyMediaFile)
-  }
-
   return res.status(404).json({ detail: 'Not found.' })
 })
