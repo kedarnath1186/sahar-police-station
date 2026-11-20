@@ -13,6 +13,7 @@ import {
 } from './config.js'
 import { PrismaSessionStore } from './sessionStore.js'
 import { ensureCsrfToken, verifyCsrfToken } from './middleware/csrf.js'
+import { authRouter } from './routes/auth.js'
 
 export const app = express()
 
@@ -76,6 +77,9 @@ app.get('/healthz', (req, res) => {
 
 // CSRF verification on state-modifying requests
 app.use(verifyCsrfToken)
+
+// Mount auth router
+app.use('/api/auth', authRouter)
 
 // Static directories
 if (fs.existsSync(STATIC_DIR)) {
