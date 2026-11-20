@@ -1,8 +1,0 @@
-Django>=5.0,<6.0
-Pillow
-requests
-python-dotenv
-playwright
-pytest
-pytest-django
-pytest-playwright

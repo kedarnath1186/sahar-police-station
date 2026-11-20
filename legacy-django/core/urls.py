@@ -1,9 +1,0 @@
-from django.urls import path
-from . import views
-
-urlpatterns = [
-    path('', views.dashboard_view, name='dashboard'),
-    path('login/', views.login_view, name='login'),
-    path('logout/', views.logout_view, name='logout'),
-    path('media/<path:path>', views.serve_media_view, name='serve_media'),
-]
