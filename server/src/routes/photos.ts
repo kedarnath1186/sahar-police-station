@@ -31,7 +31,7 @@ export function serializePhoto(photo: any) {
 
 // GET /api/accused/:id/photos
 accusedPhotosRouter.get('/', async (req, res) => {
-  const accusedId = parseInt(req.params.id, 10)
+  const accusedId = parseInt((req.params as any).id, 10)
   if (isNaN(accusedId)) return res.status(404).json({ detail: 'Not found.' })
 
   const photos = await prisma.accusedPhoto.findMany({
@@ -44,7 +44,7 @@ accusedPhotosRouter.get('/', async (req, res) => {
 
 // POST /api/accused/:id/photos
 accusedPhotosRouter.post('/', upload.single('image'), async (req, res) => {
-  const accusedId = parseInt(req.params.id, 10)
+  const accusedId = parseInt((req.params as any).id, 10)
   if (isNaN(accusedId)) return res.status(404).json({ detail: 'Not found.' })
 
   const accused = await prisma.accused.findUnique({ where: { id: accusedId } })

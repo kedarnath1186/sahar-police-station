@@ -5,12 +5,16 @@ import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { localizedError } from '../errorMessages'
 
-const loginSchema = (required: (key: string) => string) => z.object({
-  username: z.string().trim().min(1, required('auth.usernameRequired')),
-  password: z.string().min(1, required('auth.passwordRequired')),
-})
+const createLoginSchema = (required: (key: string) => string) =>
+  z.object({
+    username: z.string().trim().min(1, required('auth.usernameRequired')),
+    password: z.string().min(1, required('auth.passwordRequired')),
+  })
 
-type Credentials = z.infer<typeof loginSchema>
+export type Credentials = {
+  username: string
+  password: string
+}
 
 type LoginPageProps = {
   onSubmit: (values: Credentials) => Promise<unknown>
@@ -20,8 +24,12 @@ type LoginPageProps = {
 
 export function LoginPage({ onSubmit, error, submitting }: LoginPageProps) {
   const { t } = useTranslation()
-  const schema = useMemo(() => loginSchema((key) => t(key)), [t])
-  const { register, handleSubmit, formState: { errors } } = useForm<Credentials>({
+  const schema = useMemo(() => createLoginSchema((key) => t(key)), [t])
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<Credentials>({
     resolver: zodResolver(schema),
     defaultValues: { username: '', password: '' },
   })
@@ -62,6 +70,7 @@ export function LoginPage({ onSubmit, error, submitting }: LoginPageProps) {
         </form>
         <p className="login-local">{t('app.localStation')}</p>
       </section>
+      <footer className="app-footer">{t('footer.poweredBy')}</footer>
     </main>
   )
 }

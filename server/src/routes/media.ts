@@ -11,7 +11,7 @@ mediaRouter.get('/*', (req, res) => {
   }
 
   // Prevent path traversal
-  const requestedPath = req.params[0]
+  const requestedPath = (req.params as any)[0]
   if (!requestedPath) {
     return res.status(404).json({ detail: 'Not found.' })
   }

@@ -287,5 +287,8 @@
     "uploadFailed": "छायाचित्र अपलोड करता आले नाही. त्याचे स्वरूप आणि आकार तपासा.",
     "loadPhotos": "आरोपींची छायाचित्रे लोड करता आली नाहीत.",
     "logoutFailed": "बाहेर पडता आले नाही. पुन्हा प्रयत्न करा."
+  },
+  "footer": {
+    "poweredBy": "द्वारे समर्थित: SCode Technologies & Solutions Pvt Ltd"
   }
 }

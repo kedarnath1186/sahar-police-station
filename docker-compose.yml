@@ -1,0 +1,41 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: sahar_user
+      POSTGRES_PASSWORD: sahar_password
+      POSTGRES_DB: sahar_police
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sahar_user -d sahar_police"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      PORT: 8000
+      HOST: "0.0.0.0"
+      DEBUG: "false"
+      SECRET_KEY: "production-secret-key-change-this-in-production-env"
+      ALLOWED_HOSTS: "localhost,127.0.0.1,app"
+      CSRF_TRUSTED_ORIGINS: "http://localhost:8000,http://127.0.0.1:8000"
+      DATABASE_URL: "postgresql://sahar_user:sahar_password@db:5432/sahar_police?schema=public"
+      NOMINATIM_CONTACT_EMAIL: "sahar.police.station@mahapolice.gov.in"
+    volumes:
+      - media_data:/app/media
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  media_data:

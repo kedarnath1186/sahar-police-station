@@ -2,17 +2,18 @@ import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 
 // https://vite.dev/config/
-export default defineConfig(({ command }) => ({
+export default defineConfig({
   plugins: [react()],
-  base: command === 'build' ? '/static/frontend/' : '/',
+  base: '/',
   build: {
-    outDir: '../sahar_project/static/frontend',
+    outDir: 'dist',
     emptyOutDir: true,
   },
   server: {
     proxy: {
       '/api': process.env.VITE_API_PROXY_TARGET ?? 'http://127.0.0.1:8000',
+      '/media': process.env.VITE_API_PROXY_TARGET ?? 'http://127.0.0.1:8000',
       '/static': process.env.VITE_API_PROXY_TARGET ?? 'http://127.0.0.1:8000',
     },
   },
-}))
+})

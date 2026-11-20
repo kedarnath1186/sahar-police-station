@@ -12,8 +12,9 @@
     "build": "npm run build:frontend && npm run build:server",
     "start": "node server/dist/index.js",
     "test": "vitest run",
-    "prisma:generate": "prisma generate --schema=server/prisma/schema.prisma",
-    "prisma:push": "prisma db push --schema=server/prisma/schema.prisma",
+    "prisma:prepare": "node server/scripts/preparePrisma.js",
+    "prisma:generate": "node server/scripts/preparePrisma.js && prisma generate --schema=server/prisma/schema.prisma",
+    "prisma:push": "node server/scripts/preparePrisma.js && prisma db push --schema=server/prisma/schema.prisma",
     "create-officer": "tsx server/src/scripts/createOfficer.ts",
     "seed": "tsx server/src/scripts/seed.ts"
   },

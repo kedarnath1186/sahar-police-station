@@ -287,5 +287,8 @@
     "uploadFailed": "तस्वीर अपलोड नहीं हो सकी। उसका प्रारूप और आकार जाँचें।",
     "loadPhotos": "आरोपियों की तस्वीरें लोड नहीं हो सकीं।",
     "logoutFailed": "लॉग आउट नहीं हो सका। कृपया फिर प्रयास करें।"
+  },
+  "footer": {
+    "poweredBy": "द्वारा संचालित: SCode Technologies & Solutions Pvt Ltd"
   }
 }

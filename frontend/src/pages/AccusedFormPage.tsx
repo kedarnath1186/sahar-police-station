@@ -24,7 +24,17 @@ const createSchema = (t: TFunction) => z.object({
   pincode: z.string().regex(/^\d{6}$/, t('validation.pincode')),
 })
 
-type AccusedValues = z.infer<typeof schema>
+type AccusedValues = {
+  full_name: string
+  mobile_number: string
+  detailed_address: string
+  village: string
+  city: string
+  taluka: string
+  district: string
+  state: string
+  pincode: string
+}
 
 const blankValues: AccusedValues = {
   full_name: '',

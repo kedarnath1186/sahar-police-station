@@ -165,6 +165,7 @@ function ProtectedLayout() {
           </div>
         </header>
         <main className="page-content"><Outlet /></main>
+        <footer className="app-footer">{t('footer.poweredBy')}</footer>
       </div>
     </div>
   )
@@ -194,7 +195,7 @@ function App() {
     <Routes>
       <Route
         path="/login"
-        element={<LoginPage onSubmit={loginMutation.mutateAsync} error={loginMutation.error} submitting={loginMutation.isPending} />}
+        element={<LoginPage onSubmit={(values) => loginMutation.mutateAsync(values)} error={loginMutation.error} submitting={loginMutation.isPending} />}
       />
       <Route element={<ProtectedLayout />}>
         <Route index element={<DashboardPage />} />
