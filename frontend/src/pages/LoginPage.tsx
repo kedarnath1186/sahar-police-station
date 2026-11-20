@@ -23,7 +23,7 @@ type LoginPageProps = {
 }
 
 export function LoginPage({ onSubmit, error, submitting }: LoginPageProps) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const schema = useMemo(() => createLoginSchema((key) => t(key)), [t])
   const {
     register,
@@ -37,6 +37,25 @@ export function LoginPage({ onSubmit, error, submitting }: LoginPageProps) {
 
   return (
     <main className="login-page">
+      <div className="login-header-tools">
+        <label className="language-picker">
+          <span className="visually-hidden">{t('language.label')}</span>
+          <select
+            aria-label={t('language.label')}
+            value={i18n.resolvedLanguage ?? 'en'}
+            onChange={(event) => {
+              const language = event.target.value
+              void i18n.changeLanguage(language)
+              window.localStorage.setItem('language', language)
+              document.documentElement.lang = language
+            }}
+          >
+            <option value="en">{t('language.english')}</option>
+            <option value="mr">{t('language.marathi')}</option>
+            <option value="hi">{t('language.hindi')}</option>
+          </select>
+        </label>
+      </div>
       <section className="login-card" aria-labelledby="login-title">
         <img className="login-logo" src="/static/img/maharashtra_police_logo.png" alt={t('app.logoAlt')} />
         <p className="eyebrow">{t('app.force')}</p>

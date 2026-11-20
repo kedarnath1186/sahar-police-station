@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api'
 import { choiceLabel, formatIstDate, statusClass, type Accused, type FormChoices } from '../types'
+import { EmptyState } from '../components/EmptyState'
 
 export function AccusedDetailPage() {
   const { id } = useParams()
@@ -94,7 +95,7 @@ export function AccusedDetailPage() {
           {record.latitude != null && record.longitude != null ? (
             <div className="coordinate-box">
               <span>{record.latitude.toFixed(6)}, {record.longitude.toFixed(6)}</span>
-              <span>{choiceLabel(choices.data?.accuracies, record.location_accuracy)}</span>
+              <span className={`accuracy-chip accuracy-${record.location_accuracy}`}>{choiceLabel(choices.data?.accuracies, record.location_accuracy)}</span>
             </div>
           ) : <p className="muted-copy">No coordinates have been set for this record.</p>}
           {record.geocoded_display_name && <p className="muted-copy">{record.geocoded_display_name}</p>}
@@ -138,7 +139,14 @@ export function AccusedDetailPage() {
                 </div>
               ))}
             </div>
-          ) : <p className="muted-copy">No location history recorded.</p>}
+          ) : (
+            <EmptyState
+              title="No location history recorded"
+              description="Verification checks and location updates for this accused record will appear here."
+              actionLabel="Verify Location"
+              onAction={() => verify.mutate()}
+            />
+          )}
         </article>
         <article className="card detail-card detail-wide danger-zone">
           <h3>Record Actions</h3>

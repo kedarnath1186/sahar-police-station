@@ -1,10 +1,13 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { api } from '../api'
 import { formatIstDate, formatNumber, statusClass, type Accused, type FormChoices, type Paginated } from '../types'
+import { EmptyState } from '../components/EmptyState'
 
 export function AccusedListPage() {
+  const { t } = useTranslation()
   const [search, setSearch] = useState('')
   const [district, setDistrict] = useState('')
   const [status, setStatus] = useState('')
@@ -33,10 +36,10 @@ export function AccusedListPage() {
     <section>
       <div className="page-heading heading-with-action">
         <div>
-          <p className="eyebrow">Records Directory</p>
-          <h2>View Accused</h2>
+          <p className="eyebrow">{t('app.force')}</p>
+          <h2>{t('nav.viewAccused')}</h2>
         </div>
-        <Link className="primary-button link-button" to="/accused/new">+ Add Accused</Link>
+        <Link className="primary-button link-button" to="/accused/new">+ {t('nav.addAccused')}</Link>
       </div>
       <div className="filter-toolbar">
         <label className="search-field">
@@ -81,7 +84,14 @@ export function AccusedListPage() {
                 </article>
               ))}
             </div>
-          ) : <div className="card empty-state"><h3>No accused records found</h3><p>Try changing the search or filters.</p></div>}
+          ) : (
+            <EmptyState
+              title="No accused records found"
+              description="No accused individuals match your current search criteria, or none have been registered."
+              actionLabel={`+ ${t('nav.addAccused')}`}
+              actionTo="/accused/new"
+            />
+          )}
           {query.data.total_pages > 1 && (
             <div className="pagination">
               <button type="button" className="secondary-button" disabled={page <= 1} onClick={() => setPage((value) => value - 1)}>Previous</button>

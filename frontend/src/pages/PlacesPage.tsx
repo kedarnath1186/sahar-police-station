@@ -1,9 +1,37 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet'
+import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet'
+import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
-import 'leaflet/dist/leaflet.css'
+import L from 'leaflet'
 import { api } from '../api'
+import { EmptyState } from '../components/EmptyState'
+
+function MapResizer() {
+  const map = useMap()
+  useEffect(() => {
+    map.invalidateSize()
+    const timer = setTimeout(() => map.invalidateSize(), 200)
+    const handleResize = () => map.invalidateSize()
+    window.addEventListener('resize', handleResize)
+    return () => {
+      clearTimeout(timer)
+      window.removeEventListener('resize', handleResize)
+    }
+  }, [map])
+  return null
+}
+
+const landmarkIcon = L.divIcon({
+  className: 'custom-map-pin',
+  html: `<svg width="26" height="34" viewBox="0 0 24 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M12 0C5.373 0 0 5.373 0 12c0 9 12 20 12 20s12-11 12-20c0-6.627-5.373-12-12-12z" fill="#0B2A5B"/>
+    <circle cx="12" cy="11" r="5" fill="#E0A526"/>
+  </svg>`,
+  iconSize: [26, 34],
+  iconAnchor: [13, 34],
+  popupAnchor: [0, -32],
+})
 
 export type FamousPlace = {
   id: number
@@ -18,6 +46,7 @@ export type FamousPlace = {
 }
 
 export function PlacesPage() {
+  const { t } = useTranslation()
   const queryClient = useQueryClient()
   const places = useQuery({
     queryKey: ['places'],
@@ -30,18 +59,19 @@ export function PlacesPage() {
   return (
     <section>
       <div className="page-heading heading-with-action">
-        <div><p className="eyebrow">Landmark Directory</p><h2>Famous Places</h2></div>
-        <Link className="primary-button link-button" to="/places/new">+ Add Famous Place</Link>
+        <div><p className="eyebrow">{t('app.force')}</p><h2>{t('nav.places')}</h2></div>
+        <Link className="primary-button link-button" to="/places/new">+ {t('nav.addPlace')}</Link>
       </div>
       {mapped.length > 0 && (
         <div className="places-map-frame">
           <MapContainer center={[19.076, 72.8777]} zoom={10} scrollWheelZoom>
+            <MapResizer />
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
             {mapped.map((place) => place.latitude != null && place.longitude != null && (
-              <Marker key={place.id} position={[place.latitude, place.longitude]}>
+              <Marker key={place.id} position={[place.latitude, place.longitude]} icon={landmarkIcon}>
                 <Popup><strong>{place.name}</strong><br />{place.address}</Popup>
               </Marker>
             ))}
@@ -56,7 +86,14 @@ export function PlacesPage() {
             onDeleted={() => void queryClient.invalidateQueries({ queryKey: ['places'] })}
           />)}
         </div>
-      ) : <div className="card empty-state"><h3>No famous places added</h3><p>Create a place record to begin the directory.</p></div>}
+      ) : (
+        <EmptyState
+          title="No famous places added"
+          description="Register prominent landmarks, transport hubs, and public locations to assist officers in spatial orientation."
+          actionLabel={`+ ${t('nav.addPlace')}`}
+          actionTo="/places/new"
+        />
+      )}
     </section>
   )
 }

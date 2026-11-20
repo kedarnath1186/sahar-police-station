@@ -185,7 +185,7 @@ export function AccusedMapPage() {
                           <span className={statusClass(record.location_status)}>
                             {choiceLabel(choices.data?.statuses, record.location_status)}
                           </span>
-                          <span className="accuracy-chip">
+                          <span className={`accuracy-chip accuracy-${record.location_accuracy}`}>
                             {choiceLabel(choices.data?.accuracies, record.location_accuracy)}
                           </span>
                         </div>

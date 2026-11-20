@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { api } from '../api'
 import { choiceLabel, formatIstDate, formatNumber, statusClass, type Accused, type FormChoices } from '../types'
@@ -14,6 +15,7 @@ type DashboardData = {
 const statusOrder = ['verified', 'manually_set', 'needs_review', 'auto_geocoded', 'not_geocoded']
 
 export function DashboardPage() {
+  const { t } = useTranslation()
   const dashboard = useQuery({
     queryKey: ['dashboard'],
     queryFn: () => api.get<DashboardData>('/api/dashboard/'),
@@ -31,13 +33,13 @@ export function DashboardPage() {
     <section>
       <div className="page-heading heading-with-action">
         <div>
-          <p className="eyebrow">Station Overview</p>
-          <h2>Welcome to Sahar Police Station</h2>
-          <p className="muted-copy">Records and location verification overview.</p>
+          <p className="eyebrow">{t('app.force')}</p>
+          <h2>{t('app.station')}</h2>
+          <p className="muted-copy">{t('app.localStation')} · {t('app.address')}</p>
         </div>
         <div className="button-row">
-          <Link className="primary-button link-button" to="/accused/new">+ Add Accused</Link>
-          <Link className="secondary-button link-button" to="/map">Open Map</Link>
+          <Link className="primary-button link-button" to="/accused/new">+ {t('nav.addAccused')}</Link>
+          <Link className="secondary-button link-button" to="/map">{t('nav.mapView')}</Link>
         </div>
       </div>
       <div className="metrics-grid">

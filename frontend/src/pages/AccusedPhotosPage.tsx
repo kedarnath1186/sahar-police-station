@@ -6,6 +6,7 @@ import { Link, useParams } from 'react-router-dom'
 import { z } from 'zod'
 import { api } from '../api'
 import type { Accused, Photo } from '../types'
+import { EmptyState } from '../components/EmptyState'
 
 const maxImageSize = 5 * 1024 * 1024
 const allowedTypes = ['image/jpeg', 'image/png', 'image/webp']
@@ -71,7 +72,17 @@ export function AccusedPhotosPage() {
             }} />
           ))}
         </div>
-      ) : <div className="card empty-state"><h3>No photographs saved</h3><p>Upload an image with its location details.</p></div>}
+      ) : (
+        <EmptyState
+          title="No photographs saved"
+          description="Upload an identity or spot photograph with its location details above to complete this profile."
+          actionLabel="Upload Photograph"
+          onAction={() => {
+            const input = document.querySelector<HTMLInputElement>('.upload-form input[type="file"]')
+            input?.click()
+          }}
+        />
+      )}
     </section>
   )
 }

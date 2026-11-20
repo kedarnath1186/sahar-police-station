@@ -6,11 +6,14 @@ import {
 } from '@tanstack/react-table'
 import type { ColumnDef, PaginationState, SortingState } from '@tanstack/react-table'
 import { useQuery } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { api } from '../api'
 import { choiceLabel, formatIstDate, statusClass, type Accused, type FormChoices, type Paginated } from '../types'
+import { EmptyState } from '../components/EmptyState'
 
 export function AccusedTablePage() {
+  const { t } = useTranslation()
   const [search, setSearch] = useState('')
   const [district, setDistrict] = useState('')
   const [status, setStatus] = useState('')
@@ -59,7 +62,10 @@ export function AccusedTablePage() {
       accessorKey: 'location_accuracy',
       header: 'Accuracy',
       enableSorting: false,
-      cell: ({ getValue }) => choiceLabel(choices.data?.accuracies, getValue<string>()),
+      cell: ({ getValue }) => {
+        const value = getValue<string>()
+        return <span className={`accuracy-chip accuracy-${value}`}>{choiceLabel(choices.data?.accuracies, value)}</span>
+      },
     },
     { accessorKey: 'photo_count', header: 'Photos', enableSorting: false },
     {
@@ -102,8 +108,8 @@ export function AccusedTablePage() {
   return (
     <section>
       <div className="page-heading heading-with-action">
-        <div><p className="eyebrow">Records Directory</p><h2>Accused Table</h2></div>
-        <Link className="primary-button link-button" to="/accused/new">+ Add Accused</Link>
+        <div><p className="eyebrow">{t('app.force')}</p><h2>{t('nav.tableView')}</h2></div>
+        <Link className="primary-button link-button" to="/accused/new">+ {t('nav.addAccused')}</Link>
       </div>
       <div className="filter-toolbar table-filters">
         <label className="search-field"><span>Search records</span>
@@ -158,7 +164,14 @@ export function AccusedTablePage() {
                 ))}
               </tbody>
             </table>
-            {!records.data.results.length && <p className="table-empty muted-copy">No records match these filters.</p>}
+            {!records.data.results.length && (
+              <EmptyState
+                title="No records found"
+                description="No accused records match the selected filter criteria."
+                actionLabel={`+ ${t('nav.addAccused')}`}
+                actionTo="/accused/new"
+              />
+            )}
           </div>
           <div className="pagination table-pagination">
             <label className="page-size"><span>Rows</span>
