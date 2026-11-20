@@ -14,6 +14,12 @@ import {
 import { PrismaSessionStore } from './sessionStore.js'
 import { ensureCsrfToken, verifyCsrfToken } from './middleware/csrf.js'
 import { authRouter } from './routes/auth.js'
+import { choicesRouter } from './routes/choices.js'
+import { dashboardRouter } from './routes/dashboard.js'
+import { accusedRouter } from './routes/accused.js'
+import { photosRouter, accusedPhotosRouter } from './routes/photos.js'
+import { placesRouter } from './routes/places.js'
+import { mediaRouter } from './routes/media.js'
 
 export const app = express()
 
@@ -23,7 +29,7 @@ app.set('trust proxy', 1)
 // Helmet for security headers
 app.use(
   helmet({
-    contentSecurityPolicy: false, // Allows Leaflet tiles and CDN fonts
+    contentSecurityPolicy: false,
     crossOriginEmbedderPolicy: false,
   })
 )
@@ -64,7 +70,7 @@ app.use(ensureCsrfToken)
 // Rate limiter for API routes
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 1000,
+  max: 2000,
   standardHeaders: true,
   legacyHeaders: false,
 })
@@ -75,17 +81,25 @@ app.get('/healthz', (req, res) => {
   res.status(200).json({ status: 'ok' })
 })
 
+// Authenticated media file serving
+app.use('/media', mediaRouter)
+
 // CSRF verification on state-modifying requests
 app.use(verifyCsrfToken)
 
-// Mount auth router
+// Mount API routes
 app.use('/api/auth', authRouter)
+app.use('/api/choices', choicesRouter)
+app.use('/api/dashboard', dashboardRouter)
+app.use('/api/accused/:id/photos', accusedPhotosRouter)
+app.use('/api/accused', accusedRouter)
+app.use('/api/photos', photosRouter)
+app.use('/api/places', placesRouter)
 
 // Static directories
 if (fs.existsSync(STATIC_DIR)) {
   app.use('/static', express.static(STATIC_DIR))
 }
-// Also serve legacy logo if static is inside legacy-django
 const legacyStatic = path.resolve(STATIC_DIR, '../legacy-django/static')
 if (fs.existsSync(legacyStatic)) {
   app.use('/static', express.static(legacyStatic))
@@ -93,6 +107,17 @@ if (fs.existsSync(legacyStatic)) {
 const frontendPublic = path.resolve(STATIC_DIR, '../frontend/public/static')
 if (fs.existsSync(frontendPublic)) {
   app.use('/static', express.static(frontendPublic))
+}
+
+// Serve frontend build if dist exists
+if (fs.existsSync(FRONTEND_DIST_DIR)) {
+  app.use(express.static(FRONTEND_DIST_DIR))
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api') || req.path.startsWith('/media') || req.path.startsWith('/static')) {
+      return next()
+    }
+    res.sendFile(path.resolve(FRONTEND_DIST_DIR, 'index.html'))
+  })
 }
 
 export default app
