@@ -10,20 +10,21 @@ async function createDummyImage(text: string, color: string, filename: string, s
     fs.mkdirSync(dir, { recursive: true })
   }
 
-  const svg = `
-    <svg width="400" height="300" xmlns="http://www.w3.org/2000/svg">
-      <rect width="100%" height="100%" fill="${color}"/>
-      <rect x="4" y="4" width="392" height="292" fill="none" stroke="#E0A526" stroke-width="4"/>
-      <circle cx="200" cy="110" r="45" fill="#FFFFFF22" stroke="#FFFFFF" stroke-width="2"/>
-      <path d="M 160 210 Q 200 170 240 210 Z" fill="#FFFFFF22" stroke="#FFFFFF" stroke-width="2"/>
-      <text x="50%" y="250" dominant-baseline="middle" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="white">
-        ${text}
-      </text>
-    </svg>
-  `
-
   const filePath = path.join(dir, filename)
-  await sharp(Buffer.from(svg)).jpeg({ quality: 85 }).toFile(filePath)
+  if (!fs.existsSync(filePath)) {
+    const svg = `
+      <svg width="400" height="300" xmlns="http://www.w3.org/2000/svg">
+        <rect width="100%" height="100%" fill="${color}"/>
+        <rect x="4" y="4" width="392" height="292" fill="none" stroke="#E0A526" stroke-width="4"/>
+        <circle cx="200" cy="110" r="45" fill="#FFFFFF22" stroke="#FFFFFF" stroke-width="2"/>
+        <path d="M 160 210 Q 200 170 240 210 Z" fill="#FFFFFF22" stroke="#FFFFFF" stroke-width="2"/>
+        <text x="50%" y="250" dominant-baseline="middle" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="white">
+          ${text}
+        </text>
+      </svg>
+    `
+    await sharp(Buffer.from(svg)).jpeg({ quality: 85 }).toFile(filePath)
+  }
   return `${subfolder}/${filename}`
 }
 
@@ -35,13 +36,6 @@ async function main() {
     where: { isStaff: true },
     select: { id: true, username: true },
   })
-
-  // Clear existing records idempotently
-  await prisma.accusedPhoto.deleteMany()
-  await prisma.locationCheck.deleteMany()
-  await prisma.auditLog.deleteMany()
-  await prisma.accused.deleteMany()
-  await prisma.famousPlace.deleteMany()
 
   // 30 realistic Maharashtra Accused Records
   // Covering all 5 statuses (verified, manually_set, needs_review, auto_geocoded, not_geocoded)
@@ -571,90 +565,101 @@ async function main() {
 
   console.log(`Seeding exactly ${accusedData.length} accused records...`)
 
-  const createdAccusedList = []
+  let accusedCreated = 0
+  let accusedSkipped = 0
+  const seededAccusedList: any[] = []
+
   for (let i = 0; i < accusedData.length; i++) {
     const item = accusedData[i]
-    const verifiedAt = item.verified ? new Date(Date.now() - (i + 1) * 86400000) : null
-    const verifiedById = item.verified && existingOfficer ? existingOfficer.id : null
-
-    const accused = await prisma.accused.create({
-      data: {
-        fullName: item.fullName,
-        mobileNumber: item.mobileNumber,
-        detailedAddress: item.detailedAddress,
-        village: item.village,
-        taluka: item.taluka,
-        city: item.city,
-        district: item.district,
-        state: 'Maharashtra',
-        pincode: item.pincode,
-        latitude: item.latitude,
-        longitude: item.longitude,
-        locationStatus: item.locationStatus,
-        locationAccuracy: item.locationAccuracy,
-        geocodedQuery: item.geocodedQuery || '',
-        geocodedDisplayName: item.geocodedDisplayName || '',
-        geocodedAt: item.latitude != null ? new Date(Date.now() - (30 - i) * 86400000) : null,
-        verifiedById,
-        verifiedAt,
-      },
+    const existing = await prisma.accused.findFirst({
+      where: { mobileNumber: item.mobileNumber },
     })
-    createdAccusedList.push(accused)
 
-    // Add AuditLog and LocationCheck for verified and manually set records
-    if (item.locationStatus === 'verified') {
-      await prisma.locationCheck.create({
+    if (existing) {
+      accusedSkipped++
+      seededAccusedList.push(existing)
+    } else {
+      const verifiedAt = item.verified ? new Date(Date.now() - (i + 1) * 86400000) : null
+      const verifiedById = item.verified && existingOfficer ? existingOfficer.id : null
+
+      const accused = await prisma.accused.create({
         data: {
-          accusedId: accused.id,
-          officerId: verifiedById,
-          action: 'verified',
+          fullName: item.fullName,
+          mobileNumber: item.mobileNumber,
+          detailedAddress: item.detailedAddress,
+          village: item.village,
+          taluka: item.taluka,
+          city: item.city,
+          district: item.district,
+          state: 'Maharashtra',
+          pincode: item.pincode,
           latitude: item.latitude,
           longitude: item.longitude,
-          locationStatus: 'verified',
+          locationStatus: item.locationStatus,
           locationAccuracy: item.locationAccuracy,
-          note: 'Physical spot verification completed by investigating officer.',
-          timestamp: verifiedAt || new Date(),
+          geocodedQuery: item.geocodedQuery || '',
+          geocodedDisplayName: item.geocodedDisplayName || '',
+          geocodedAt: item.latitude != null ? new Date(Date.now() - (30 - i) * 86400000) : null,
+          verifiedById,
+          verifiedAt,
         },
       })
-      await prisma.auditLog.create({
-        data: {
-          userId: verifiedById,
-          action: 'LOCATION_VERIFIED',
-          modelName: 'Accused',
-          objectId: accused.id,
-          description: `Location marked as verified by inspecting officer for record #${accused.id}. Coordinates: (${item.latitude}, ${item.longitude})`,
-          timestamp: verifiedAt || new Date(),
-        },
-      })
-    } else if (item.locationStatus === 'manually_set') {
-      const checkDate = new Date(Date.now() - (15 - (i % 5)) * 86400000)
-      await prisma.locationCheck.create({
-        data: {
-          accusedId: accused.id,
-          officerId: existingOfficer ? existingOfficer.id : null,
-          action: 'manually_set',
-          latitude: item.latitude,
-          longitude: item.longitude,
-          locationStatus: 'manually_set',
-          locationAccuracy: item.locationAccuracy,
-          note: 'Coordinates manually verified against ration card and voter registry.',
-          timestamp: checkDate,
-        },
-      })
-      await prisma.auditLog.create({
-        data: {
-          userId: existingOfficer ? existingOfficer.id : null,
-          action: 'LOCATION_MANUALLY_SET',
-          modelName: 'Accused',
-          objectId: accused.id,
-          description: `Location manually pinned for record #${accused.id}. Coordinates: (${item.latitude}, ${item.longitude})`,
-          timestamp: checkDate,
-        },
-      })
+      accusedCreated++
+      seededAccusedList.push(accused)
+
+      // Add AuditLog and LocationCheck for verified and manually set records
+      if (item.locationStatus === 'verified') {
+        await prisma.locationCheck.create({
+          data: {
+            accusedId: accused.id,
+            officerId: verifiedById,
+            action: 'verified',
+            latitude: item.latitude,
+            longitude: item.longitude,
+            locationStatus: 'verified',
+            locationAccuracy: item.locationAccuracy,
+            note: 'Physical spot verification completed by investigating officer.',
+            timestamp: verifiedAt || new Date(),
+          },
+        })
+        await prisma.auditLog.create({
+          data: {
+            userId: verifiedById,
+            action: 'LOCATION_VERIFIED',
+            modelName: 'Accused',
+            objectId: accused.id,
+            description: `Location marked as verified by inspecting officer for record #${accused.id}. Coordinates: (${item.latitude}, ${item.longitude})`,
+            timestamp: verifiedAt || new Date(),
+          },
+        })
+      } else if (item.locationStatus === 'manually_set') {
+        const checkDate = new Date(Date.now() - (15 - (i % 5)) * 86400000)
+        await prisma.locationCheck.create({
+          data: {
+            accusedId: accused.id,
+            officerId: existingOfficer ? existingOfficer.id : null,
+            action: 'manually_set',
+            latitude: item.latitude,
+            longitude: item.longitude,
+            locationStatus: 'manually_set',
+            locationAccuracy: item.locationAccuracy,
+            note: 'Coordinates manually verified against ration card and voter registry.',
+            timestamp: checkDate,
+          },
+        })
+        await prisma.auditLog.create({
+          data: {
+            userId: existingOfficer ? existingOfficer.id : null,
+            action: 'LOCATION_MANUALLY_SET',
+            modelName: 'Accused',
+            objectId: accused.id,
+            description: `Location manually pinned for record #${accused.id}. Coordinates: (${item.latitude}, ${item.longitude})`,
+            timestamp: checkDate,
+          },
+        })
+      }
     }
   }
-
-  console.log(`Created ${createdAccusedList.length} accused records with audit trails.`)
 
   // Create exactly 15 valid JPEG photos across records
   const colors = ['#0B2A5B', '#1B365D', '#2E7D32', '#37474F', '#4A148C', '#004D40']
@@ -676,33 +681,55 @@ async function main() {
     'Facial profile photo taken during inquiry documentation',
   ]
 
+  let photosCreated = 0
+  let photosSkipped = 0
+
   for (let i = 0; i < 15; i++) {
     // Distribute among geocoded records (first 25 records)
-    const targetAccused = createdAccusedList[i % 25]
-    const filename = `accused_${targetAccused.id}_photo_${i + 1}.jpg`
-    const relativePath = await createDummyImage(
-      `Photo #${i + 1}: ${targetAccused.fullName.slice(0, 18)}`,
-      colors[i % colors.length],
-      filename,
-      'accused_photos'
-    )
+    const targetAccused = seededAccusedList[i % 25]
+    if (!targetAccused) continue
+    const locationAddress = `${targetAccused.detailedAddress}, ${targetAccused.village}`
+    const caption = photoCaptions[i]
 
-    const lat = targetAccused.latitude ? targetAccused.latitude + (i * 0.0001) : 19.0988
-    const lon = targetAccused.longitude ? targetAccused.longitude + (i * 0.0001) : 72.8711
-
-    await prisma.accusedPhoto.create({
-      data: {
+    // Check whether photo already exists for this accused record
+    const existingPhoto = await prisma.accusedPhoto.findFirst({
+      where: {
         accusedId: targetAccused.id,
-        image: relativePath,
-        locationAddress: `${targetAccused.detailedAddress}, ${targetAccused.village}`,
-        latitude: lat,
-        longitude: lon,
-        caption: photoCaptions[i],
-        uploadedAt: new Date(Date.now() - (20 - i) * 86400000),
+        OR: [
+          { caption },
+          { locationAddress },
+        ],
       },
     })
+
+    if (existingPhoto) {
+      photosSkipped++
+    } else {
+      const filename = `accused_${targetAccused.id}_photo_${i + 1}.jpg`
+      const relativePath = await createDummyImage(
+        `Photo #${i + 1}: ${targetAccused.fullName.slice(0, 18)}`,
+        colors[i % colors.length],
+        filename,
+        'accused_photos'
+      )
+
+      const lat = targetAccused.latitude ? targetAccused.latitude + (i * 0.0001) : 19.0988
+      const lon = targetAccused.longitude ? targetAccused.longitude + (i * 0.0001) : 72.8711
+
+      await prisma.accusedPhoto.create({
+        data: {
+          accusedId: targetAccused.id,
+          image: relativePath,
+          locationAddress,
+          latitude: lat,
+          longitude: lon,
+          caption,
+          uploadedAt: new Date(Date.now() - (20 - i) * 86400000),
+        },
+      })
+      photosCreated++
+    }
   }
-  console.log('Created exactly 15 valid accused photographs.')
 
   // Create exactly 8 famous places across at least 3 districts
   const placesData = [
@@ -780,26 +807,46 @@ async function main() {
     },
   ]
 
+  let placesCreated = 0
+  let placesSkipped = 0
+
   for (let i = 0; i < placesData.length; i++) {
     const place = placesData[i]
-    const filename = `place_${i + 1}.jpg`
-    const relativePath = await createDummyImage(
-      place.name.slice(0, 24),
-      colors[i % colors.length],
-      filename,
-      'famous_places'
-    )
 
-    await prisma.famousPlace.create({
-      data: {
-        ...place,
-        photo: relativePath,
+    // Check for an existing place with the same name and city
+    const existingPlace = await prisma.famousPlace.findFirst({
+      where: {
+        name: place.name,
+        city: place.city,
       },
     })
-  }
-  console.log(`Created exactly ${placesData.length} famous landmark records across 5 districts.`)
 
-  console.log('Seeding finished successfully!')
+    if (existingPlace) {
+      placesSkipped++
+    } else {
+      const filename = `place_${i + 1}.jpg`
+      const relativePath = await createDummyImage(
+        place.name.slice(0, 24),
+        colors[i % colors.length],
+        filename,
+        'famous_places'
+      )
+
+      await prisma.famousPlace.create({
+        data: {
+          ...place,
+          photo: relativePath,
+        },
+      })
+      placesCreated++
+    }
+  }
+
+  // Print accurate summary reflecting database operations
+  console.log(`Accused: ${accusedData.length} total, ${accusedCreated} created, ${accusedSkipped} skipped`)
+  console.log(`Photos: ${photoCaptions.length} total, ${photosCreated} created, ${photosSkipped} skipped`)
+  console.log(`Famous places: ${placesData.length} total, ${placesCreated} created, ${placesSkipped} skipped`)
+
   await prisma.$disconnect()
 }
 
