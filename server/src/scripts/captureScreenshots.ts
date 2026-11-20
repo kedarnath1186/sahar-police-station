@@ -62,7 +62,9 @@ async function capture() {
 
       // Wait for navigation to /
       console.log(`- Waiting for dashboard navigation...`)
-      await page.waitForFunction(() => !window.location.pathname.includes('/login'), { timeout: 10000 })
+      await page.waitForFunction(
+        () => !(globalThis as any).location.pathname.includes('/login'),
+        { timeout: 10000 })
       await new Promise((r) => setTimeout(r, 1500))
       console.log(`- Current URL: ${page.url()}`)
 
