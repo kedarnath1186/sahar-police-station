@@ -2,7 +2,6 @@ import fs from 'node:fs'
 import path from 'node:path'
 import sharp from 'sharp'
 import prisma from '../db.js'
-import { hashPassword } from '../services/authService.js'
 import { MEDIA_DIR } from '../config.js'
 
 async function createDummyImage(text: string, color: string, filename: string, subfolder: string): Promise<string> {
@@ -12,10 +11,12 @@ async function createDummyImage(text: string, color: string, filename: string, s
   }
 
   const svg = `
-    <svg width="300" height="300" xmlns="http://www.w3.org/2000/svg">
+    <svg width="400" height="300" xmlns="http://www.w3.org/2000/svg">
       <rect width="100%" height="100%" fill="${color}"/>
-      <rect x="2" y="2" width="296" height="296" fill="none" stroke="#E0A526" stroke-width="4"/>
-      <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="bold" fill="white">
+      <rect x="4" y="4" width="392" height="292" fill="none" stroke="#E0A526" stroke-width="4"/>
+      <circle cx="200" cy="110" r="45" fill="#FFFFFF22" stroke="#FFFFFF" stroke-width="2"/>
+      <path d="M 160 210 Q 200 170 240 210 Z" fill="#FFFFFF22" stroke="#FFFFFF" stroke-width="2"/>
+      <text x="50%" y="250" dominant-baseline="middle" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="white">
         ${text}
       </text>
     </svg>
@@ -29,32 +30,25 @@ async function createDummyImage(text: string, color: string, filename: string, s
 async function main() {
   console.log('Starting Sahar Police Station data seeding...')
 
-  // Create or update officer
-  const hashedPassword = await hashPassword('police123')
-  const officer = await prisma.user.upsert({
-    where: { username: 'officer' },
-    update: {
-      password: hashedPassword,
-      fullName: 'Rajesh Shinde',
-      isStaff: true,
-    },
-    create: {
-      username: 'officer',
-      password: hashedPassword,
-      fullName: 'Rajesh Shinde',
-      isStaff: true,
-    },
+  // Check if an existing officer exists to link verified records (do NOT create one, do NOT print passwords)
+  const existingOfficer = await prisma.user.findFirst({
+    where: { isStaff: true },
+    select: { id: true, username: true },
   })
 
-  // Clear existing dummy records
+  // Clear existing records idempotently
   await prisma.accusedPhoto.deleteMany()
   await prisma.locationCheck.deleteMany()
   await prisma.auditLog.deleteMany()
   await prisma.accused.deleteMany()
   await prisma.famousPlace.deleteMany()
 
+  // 30 realistic Maharashtra Accused Records
+  // Covering all 5 statuses (verified, manually_set, needs_review, auto_geocoded, not_geocoded)
+  // and all 6 accuracy levels (exact, village, taluka, district, state, unknown)
+  // All coordinates strictly inside Maharashtra bbox: lat 15.6 to 22.1, lon 72.6 to 80.9
   const accusedData = [
-    // 1. VERIFIED - 5 records
+    // --- 1. VERIFIED (7 records) ---
     {
       fullName: 'Suresh Tukaram Kadam',
       mobileNumber: '9820112233',
@@ -69,7 +63,7 @@ async function main() {
       locationStatus: 'verified',
       locationAccuracy: 'exact',
       geocodedQuery: 'Flat 302, Sai Shraddha Apts, Navpada Road, Sahar Village, Andheri, Mumbai Suburban, Maharashtra, 400099, India',
-      geocodedDisplayName: 'Sahar Village, Navpada, Andheri East, Zone VIII, Mumbai, Maharashtra, 400099, India',
+      geocodedDisplayName: 'Sahar Village, Navpada, Andheri East, Mumbai Suburban, Maharashtra, 400099, India',
       verified: true,
     },
     {
@@ -140,8 +134,42 @@ async function main() {
       geocodedDisplayName: 'Panchavati, Nashik, Maharashtra, 422003, India',
       verified: true,
     },
+    {
+      fullName: 'Kiran Madhav Rao',
+      mobileNumber: '9823123450',
+      detailedAddress: 'Near Zilla Parishad School, Tarabai Park',
+      village: 'Tarabai Park',
+      taluka: 'Karvir',
+      city: 'Kolhapur',
+      district: 'Kolhapur',
+      pincode: '416003',
+      latitude: 16.711800,
+      longitude: 74.238200,
+      locationStatus: 'verified',
+      locationAccuracy: 'village',
+      geocodedQuery: 'Tarabai Park, Karvir, Kolhapur, Maharashtra, 416003, India',
+      geocodedDisplayName: 'Tarabai Park, Kolhapur, Maharashtra, 416003, India',
+      verified: true,
+    },
+    {
+      fullName: 'Sunil Bhaskar Deshmukh',
+      mobileNumber: '9822334455',
+      detailedAddress: 'Ward No 3, Station Area, Badnera',
+      village: 'Badnera',
+      taluka: 'Amravati',
+      city: 'Amravati',
+      district: 'Amravati',
+      pincode: '444701',
+      latitude: 20.865400,
+      longitude: 77.728900,
+      locationStatus: 'verified',
+      locationAccuracy: 'taluka',
+      geocodedQuery: 'Badnera, Amravati, Maharashtra, 444701, India',
+      geocodedDisplayName: 'Badnera, Amravati, Maharashtra, 444701, India',
+      verified: true,
+    },
 
-    // 2. MANUALLY_SET - 4 records
+    // --- 2. MANUALLY_SET (6 records) ---
     {
       fullName: 'Anil Dattatray Sawant',
       mobileNumber: '9833678901',
@@ -206,216 +234,357 @@ async function main() {
       longitude: 73.807650,
       locationStatus: 'manually_set',
       locationAccuracy: 'exact',
-      geocodedQuery: 'Kothrud, Pune, Maharashtra, 411038, India',
+      geocodedQuery: 'Kothrud, Haveli, Pune, Maharashtra, 411038, India',
       geocodedDisplayName: 'Kothrud, Pune, Maharashtra, 411038, India',
       verified: false,
     },
-
-    // 3. NEEDS_REVIEW - 4 records
     {
-      fullName: 'Santosh Mahadev Salunkhe',
-      mobileNumber: '9870012345',
-      detailedAddress: 'Survey 88, Near Ganpati Temple, Village Outskirts',
-      village: 'Wakad',
-      taluka: 'Mulshi',
-      city: 'Pimpri-Chinchwad',
-      district: 'Pune',
-      pincode: '411057',
-      latitude: 18.598640,
-      longitude: 73.768410,
-      locationStatus: 'needs_review',
-      locationAccuracy: 'village',
-      geocodedQuery: 'Wakad, Mulshi, Pune, Maharashtra, India',
-      geocodedDisplayName: 'Wakad, Pimpri-Chinchwad, Pune, Maharashtra, 411057, India',
-      verified: false,
-    },
-    {
-      fullName: 'Sunil Bhagwan Bhosale',
-      mobileNumber: '9811123456',
-      detailedAddress: 'House 140, Market Yard, Taluka Main Road',
-      village: 'Baramati Rural',
-      taluka: 'Baramati',
-      city: 'Baramati',
-      district: 'Pune',
-      pincode: '413102',
-      latitude: 18.151420,
-      longitude: 74.577540,
-      locationStatus: 'needs_review',
-      locationAccuracy: 'taluka',
-      geocodedQuery: 'Baramati, Pune, Maharashtra, India',
-      geocodedDisplayName: 'Baramati, Pune District, Maharashtra, 413102, India',
-      verified: false,
-    },
-    {
-      fullName: 'Nitin Jaywant Desai',
-      mobileNumber: '9823234567',
-      detailedAddress: 'Farmhouse Plot 12, Near Sugar Factory Road',
-      village: 'Karad Rural',
-      taluka: 'Karad',
-      city: 'Karad',
-      district: 'Satara',
-      pincode: '415110',
-      latitude: 17.288540,
-      longitude: 74.184510,
-      locationStatus: 'needs_review',
-      locationAccuracy: 'taluka',
-      geocodedQuery: 'Karad, Satara, Maharashtra, India',
-      geocodedDisplayName: 'Karad, Satara, Maharashtra, 415110, India',
-      verified: false,
-    },
-    {
-      fullName: 'Rahul Yashwant Shirodkar',
-      mobileNumber: '9890345678',
-      detailedAddress: 'Sea Face Chawl, Bandar Road, Malvan Town',
-      village: 'Malvan',
-      taluka: 'Malvan',
-      city: 'Malvan',
+      fullName: 'Santosh Janardhan Rane',
+      mobileNumber: '9822456781',
+      detailedAddress: 'Behind ST Workshop, Sawantwadi Road',
+      village: 'Charathe',
+      taluka: 'Sawantwadi',
+      city: 'Sawantwadi',
       district: 'Sindhudurg',
-      pincode: '416606',
-      latitude: 16.061450,
-      longitude: 73.468410,
-      locationStatus: 'needs_review',
-      locationAccuracy: 'district',
-      geocodedQuery: 'Sindhudurg, Maharashtra, India',
-      geocodedDisplayName: 'Sindhudurg District, Konkan Division, Maharashtra, India',
+      pincode: '416510',
+      latitude: 15.908200,
+      longitude: 73.821400,
+      locationStatus: 'manually_set',
+      locationAccuracy: 'village',
+      geocodedQuery: 'Charathe, Sawantwadi, Sindhudurg, Maharashtra, 416510, India',
+      geocodedDisplayName: 'Charathe, Sindhudurg, Maharashtra, 416510, India',
+      verified: false,
+    },
+    {
+      fullName: 'Balu Kisan Ghodke',
+      mobileNumber: '9822678912',
+      detailedAddress: 'Near MIDC Gate 2, Waluj Industrial Area',
+      village: 'Waluj',
+      taluka: 'Gangapur',
+      city: 'Aurangabad',
+      district: 'Aurangabad (Chhatrapati Sambhajinagar)',
+      pincode: '431136',
+      latitude: 19.824500,
+      longitude: 75.228900,
+      locationStatus: 'manually_set',
+      locationAccuracy: 'taluka',
+      geocodedQuery: 'Waluj, Gangapur, Aurangabad, Maharashtra, 431136, India',
+      geocodedDisplayName: 'Waluj, Chhatrapati Sambhajinagar, Maharashtra, 431136, India',
       verified: false,
     },
 
-    // 4. AUTO_GEOCODED - 4 records
+    // --- 3. NEEDS_REVIEW (6 records) ---
     {
-      fullName: 'Akash Subhash Mane',
-      mobileNumber: '9834456789',
-      detailedAddress: 'CTS 921, Western Express Highway, Near Gundavali Metro',
-      village: 'Andheri East',
+      fullName: 'Pradeep Vishnu Salvi',
+      mobileNumber: '9820011224',
+      detailedAddress: 'Old Bori Chawl, Airport Perimeter Wall, Sahar Road',
+      village: 'Sahar Village',
       taluka: 'Andheri',
       city: 'Mumbai',
       district: 'Mumbai Suburban',
-      pincode: '400069',
-      latitude: 19.117450,
-      longitude: 72.854120,
-      locationStatus: 'auto_geocoded',
+      pincode: '400099',
+      latitude: 19.096500,
+      longitude: 72.868200,
+      locationStatus: 'needs_review',
       locationAccuracy: 'exact',
-      geocodedQuery: 'Gundavali Metro, Andheri East, Mumbai Suburban, Maharashtra, 400069, India',
-      geocodedDisplayName: 'Gundavali, Andheri East, Mumbai Suburban, Maharashtra, 400069, India',
+      geocodedQuery: 'Sahar Road, Sahar Village, Andheri, Mumbai Suburban, Maharashtra, 400099, India',
+      geocodedDisplayName: 'Sahar Road, Andheri East, Mumbai Suburban, Maharashtra, 400099, India',
       verified: false,
     },
     {
-      fullName: 'Prashant Manohar Rane',
-      mobileNumber: '9867567890',
-      detailedAddress: 'Opposite Cidco Bus Stand, Jalna Road',
-      village: 'Cidco',
+      fullName: 'Manoj Vitthal Shinde',
+      mobileNumber: '9819922334',
+      detailedAddress: 'Opposite Fish Market, Kasarvadavali, Ghodbunder Road',
+      village: 'Kasarvadavali',
+      taluka: 'Thane',
+      city: 'Thane',
+      district: 'Thane',
+      pincode: '400615',
+      latitude: 19.268420,
+      longitude: 72.964210,
+      locationStatus: 'needs_review',
+      locationAccuracy: 'village',
+      geocodedQuery: 'Kasarvadavali, Ghodbunder Road, Thane, Maharashtra, 400615, India',
+      geocodedDisplayName: 'Kasarvadavali, Thane, Maharashtra, 400615, India',
+      verified: false,
+    },
+    {
+      fullName: 'Nitin Baban Pawar',
+      mobileNumber: '9890123456',
+      detailedAddress: 'Near Octroi Naka, Hadapsar-Saswad Road',
+      village: 'Hadapsar',
+      taluka: 'Haveli',
+      city: 'Pune',
+      district: 'Pune',
+      pincode: '411028',
+      latitude: 18.501230,
+      longitude: 73.926540,
+      locationStatus: 'needs_review',
+      locationAccuracy: 'village',
+      geocodedQuery: 'Hadapsar, Pune, Maharashtra, 411028, India',
+      geocodedDisplayName: 'Hadapsar, Pune, Maharashtra, 411028, India',
+      verified: false,
+    },
+    {
+      fullName: 'Rahul Prakash Gholap',
+      mobileNumber: '9822987654',
+      detailedAddress: 'Behind Bus Stand, Jalna Road, CIDCO N-5',
+      village: 'CIDCO',
       taluka: 'Aurangabad',
-      city: 'Aurangabad (Chhatrapati Sambhajinagar)',
+      city: 'Aurangabad',
       district: 'Aurangabad (Chhatrapati Sambhajinagar)',
       pincode: '431003',
-      latitude: 19.876540,
+      latitude: 19.883450,
       longitude: 75.362140,
-      locationStatus: 'auto_geocoded',
-      locationAccuracy: 'exact',
-      geocodedQuery: 'Cidco, Jalna Road, Aurangabad, Maharashtra, India',
+      locationStatus: 'needs_review',
+      locationAccuracy: 'taluka',
+      geocodedQuery: 'CIDCO, Aurangabad, Maharashtra, 431003, India',
       geocodedDisplayName: 'CIDCO, Chhatrapati Sambhajinagar, Maharashtra, 431003, India',
       verified: false,
     },
     {
-      fullName: 'Amol Vasantrao Pawar',
-      mobileNumber: '9891678901',
-      detailedAddress: 'Ward No 4, Main Bazaar Road, Near Bus Stand',
-      village: 'Dharampeth',
-      taluka: 'Nagpur Urban',
-      city: 'Nagpur',
-      district: 'Nagpur',
-      pincode: '440010',
-      latitude: 21.145820,
-      longitude: 79.068410,
-      locationStatus: 'auto_geocoded',
+      fullName: 'Ashok Shankar Mhatre',
+      mobileNumber: '9820456123',
+      detailedAddress: 'Near Uran Wharf, Mora Bunder Road',
+      village: 'Mora',
+      taluka: 'Uran',
+      city: 'Uran',
+      district: 'Raigad',
+      pincode: '400702',
+      latitude: 18.887600,
+      longitude: 72.934100,
+      locationStatus: 'needs_review',
       locationAccuracy: 'exact',
-      geocodedQuery: 'Dharampeth, Nagpur, Maharashtra, India',
-      geocodedDisplayName: 'Dharampeth, Nagpur, Maharashtra, 440010, India',
+      geocodedQuery: 'Mora Bunder Road, Mora, Uran, Raigad, Maharashtra, 400702, India',
+      geocodedDisplayName: 'Mora, Uran, Raigad, Maharashtra, 400702, India',
       verified: false,
     },
     {
-      fullName: 'Vinod Ramdas Shelar',
-      mobileNumber: '9822789012',
-      detailedAddress: 'Opposite District Court, Old Pune-Bangalore Road',
-      village: 'Shahupuri',
-      taluka: 'Karveer',
-      city: 'Kolhapur',
-      district: 'Kolhapur',
-      pincode: '416001',
-      latitude: 16.704510,
-      longitude: 74.243210,
-      locationStatus: 'auto_geocoded',
-      locationAccuracy: 'exact',
-      geocodedQuery: 'Shahupuri, Kolhapur, Maharashtra, India',
-      geocodedDisplayName: 'Shahupuri, Kolhapur, Maharashtra, 416001, India',
+      fullName: 'Dnyaneshwar Shivaji Doke',
+      mobileNumber: '9823456799',
+      detailedAddress: 'Near Civil Hospital Road, Beed By-pass',
+      village: 'Peth',
+      taluka: 'Beed',
+      city: 'Beed',
+      district: 'Beed',
+      pincode: '431122',
+      latitude: 18.991200,
+      longitude: 75.761200,
+      locationStatus: 'needs_review',
+      locationAccuracy: 'district',
+      geocodedQuery: 'Beed, Maharashtra, 431122, India',
+      geocodedDisplayName: 'Beed District, Maharashtra, India',
       verified: false,
     },
 
-    // 5. NOT_GEOCODED - 3 records
+    // --- 4. AUTO_GEOCODED (6 records) ---
     {
-      fullName: 'Kishore Jagannath Wagh',
-      mobileNumber: '9893890123',
-      detailedAddress: 'Unnumbered Forest Hut, Past Dongar Nala, Dense Jungle Border',
-      village: 'Bhamragad Forest',
+      fullName: 'Amol Sanjay Jagtap',
+      mobileNumber: '9823456789',
+      detailedAddress: 'Shree Complex, Near ST Bus Stand, Market Yard Road',
+      village: 'Baramati',
+      taluka: 'Baramati',
+      city: 'Baramati',
+      district: 'Pune',
+      pincode: '413102',
+      latitude: 18.151240,
+      longitude: 74.578650,
+      locationStatus: 'auto_geocoded',
+      locationAccuracy: 'exact',
+      geocodedQuery: 'Market Yard Road, Baramati, Pune, Maharashtra, 413102, India',
+      geocodedDisplayName: 'Baramati, Pune, Maharashtra, 413102, India',
+      verified: false,
+    },
+    {
+      fullName: 'Vikas Madhukar Kale',
+      mobileNumber: '9850123456',
+      detailedAddress: 'Gala 12, APMC Market Yard, New Mondha',
+      village: 'Mondha',
+      taluka: 'Nanded',
+      city: 'Nanded',
+      district: 'Nanded',
+      pincode: '431602',
+      latitude: 19.158420,
+      longitude: 77.316540,
+      locationStatus: 'auto_geocoded',
+      locationAccuracy: 'exact',
+      geocodedQuery: 'New Mondha, Nanded, Maharashtra, 431602, India',
+      geocodedDisplayName: 'Nanded, Maharashtra, 431602, India',
+      verified: false,
+    },
+    {
+      fullName: 'Sandip Dnyaneshwar Wagh',
+      mobileNumber: '9860234567',
+      detailedAddress: 'Plot 7, Near Shivaji Maharaj Statue, Main Road',
+      village: 'Sangamner',
+      taluka: 'Sangamner',
+      city: 'Sangamner',
+      district: 'Ahmednagar',
+      pincode: '422605',
+      latitude: 19.574510,
+      longitude: 74.208740,
+      locationStatus: 'auto_geocoded',
+      locationAccuracy: 'village',
+      geocodedQuery: 'Sangamner, Ahmednagar, Maharashtra, 422605, India',
+      geocodedDisplayName: 'Sangamner, Ahilyanagar, Maharashtra, 422605, India',
+      verified: false,
+    },
+    {
+      fullName: 'Rohan Suresh Kulkarni',
+      mobileNumber: '9870345678',
+      detailedAddress: 'Flat 101, Ganpati Mandir Chowk, Old Ausa Road',
+      village: 'Ausa Road',
+      taluka: 'Latur',
+      city: 'Latur',
+      district: 'Latur',
+      pincode: '413512',
+      latitude: 18.408750,
+      longitude: 76.568420,
+      locationStatus: 'auto_geocoded',
+      locationAccuracy: 'village',
+      geocodedQuery: 'Ausa Road, Latur, Maharashtra, 413512, India',
+      geocodedDisplayName: 'Latur, Maharashtra, 413512, India',
+      verified: false,
+    },
+    {
+      fullName: 'Tanaji Pandurang Shinde',
+      mobileNumber: '9881456789',
+      detailedAddress: 'Near Subhash Chowk, Cotton Market',
+      village: 'Hinganghat',
+      taluka: 'Hinganghat',
+      city: 'Hinganghat',
+      district: 'Wardha',
+      pincode: '442301',
+      latitude: 20.551240,
+      longitude: 78.834510,
+      locationStatus: 'auto_geocoded',
+      locationAccuracy: 'taluka',
+      geocodedQuery: 'Hinganghat, Wardha, Maharashtra, 442301, India',
+      geocodedDisplayName: 'Hinganghat, Wardha, Maharashtra, 442301, India',
+      verified: false,
+    },
+    {
+      fullName: 'Somnath Bapurao Deshmukh',
+      mobileNumber: '9892567890',
+      detailedAddress: 'Bazaar Peth, Near Gram Panchayat Office',
+      village: 'Bhum',
+      taluka: 'Bhum',
+      city: 'Bhum',
+      district: 'Osmanabad (Dharashiv)',
+      pincode: '413504',
+      latitude: 18.471200,
+      longitude: 75.667800,
+      locationStatus: 'auto_geocoded',
+      locationAccuracy: 'district',
+      geocodedQuery: 'Bhum, Osmanabad, Maharashtra, 413504, India',
+      geocodedDisplayName: 'Dharashiv District, Maharashtra, 413504, India',
+      verified: false,
+    },
+
+    // --- 5. NOT_GEOCODED (5 records) ---
+    {
+      fullName: 'Vinod Ramchandra Kamble',
+      mobileNumber: '9921678901',
+      detailedAddress: 'Remote Farm House, Unnamed Road, Deep Forest Area',
+      village: 'Bhamragad',
       taluka: 'Bhamragad',
-      city: 'Gadchiroli',
+      city: 'Bhamragad',
       district: 'Gadchiroli',
       pincode: '442710',
       latitude: null,
       longitude: null,
       locationStatus: 'not_geocoded',
       locationAccuracy: 'unknown',
-      geocodedQuery: 'Bhamragad Forest, Gadchiroli, Maharashtra, India',
-      geocodedDisplayName: '',
+      geocodedQuery: null,
+      geocodedDisplayName: null,
       verified: false,
     },
     {
-      fullName: 'Manoj Prabhakar Londhe',
-      mobileNumber: '9868901234',
-      detailedAddress: 'Remote Canal Post, Near Unsurveyed Checkpost',
-      village: 'Umarkhed Remote',
-      taluka: 'Umarkhed',
-      city: 'Yavatmal',
-      district: 'Yavatmal',
-      pincode: '445206',
+      fullName: 'Yogesh Ankush Shingare',
+      mobileNumber: '9922789012',
+      detailedAddress: 'Jungle Pathar, Beyond Checkpost 4, Tribal Belt',
+      village: 'Toranmal',
+      taluka: 'Shahada',
+      city: 'Toranmal',
+      district: 'Nandurbar',
+      pincode: '425423',
       latitude: null,
       longitude: null,
       locationStatus: 'not_geocoded',
       locationAccuracy: 'unknown',
-      geocodedQuery: 'Umarkhed Remote, Yavatmal, Maharashtra, India',
-      geocodedDisplayName: '',
+      geocodedQuery: null,
+      geocodedDisplayName: null,
       verified: false,
     },
     {
-      fullName: 'Tanaji Sambhaji Ghadge',
-      mobileNumber: '9820012399',
-      detailedAddress: 'Tribal Settlement Cluster 3, Hills Beyond Jawhar Taluka',
-      village: 'Jawhar Hills',
-      taluka: 'Palghar',
-      city: 'Palghar',
-      district: 'Palghar',
-      pincode: '401603',
+      fullName: 'Prakash Bhagwan Solanke',
+      mobileNumber: '9923890123',
+      detailedAddress: 'Old Abandoned Stone Quarry, Off Highway 53',
+      village: 'Motala',
+      taluka: 'Motala',
+      city: 'Motala',
+      district: 'Buldhana',
+      pincode: '443103',
       latitude: null,
       longitude: null,
       locationStatus: 'not_geocoded',
       locationAccuracy: 'unknown',
-      geocodedQuery: 'Jawhar Hills, Palghar, Maharashtra, India',
-      geocodedDisplayName: '',
+      geocodedQuery: null,
+      geocodedDisplayName: null,
+      verified: false,
+    },
+    {
+      fullName: 'Kishor Dattatraya Raut',
+      mobileNumber: '9924901234',
+      detailedAddress: 'Hutment near Canal Siphon, Unmapped Canal Bank',
+      village: 'Shevgaon',
+      taluka: 'Shevgaon',
+      city: 'Shevgaon',
+      district: 'Ahmednagar',
+      pincode: '414502',
+      latitude: null,
+      longitude: null,
+      locationStatus: 'not_geocoded',
+      locationAccuracy: 'unknown',
+      geocodedQuery: null,
+      geocodedDisplayName: null,
+      verified: false,
+    },
+    {
+      fullName: 'Devidas Shrirang Sonawane',
+      mobileNumber: '9925012345',
+      detailedAddress: 'Temporary Nomad Shelter, Near Riverbed Shindkheda',
+      village: 'Shindkheda',
+      taluka: 'Shindkheda',
+      city: 'Dhule',
+      district: 'Dhule',
+      pincode: '425406',
+      latitude: null,
+      longitude: null,
+      locationStatus: 'not_geocoded',
+      locationAccuracy: 'state',
+      geocodedQuery: null,
+      geocodedDisplayName: null,
       verified: false,
     },
   ]
 
-  const createdAccused = []
-  for (const item of accusedData) {
-    const isVerified = item.verified
+  console.log(`Seeding exactly ${accusedData.length} accused records...`)
+
+  const createdAccusedList = []
+  for (let i = 0; i < accusedData.length; i++) {
+    const item = accusedData[i]
+    const verifiedAt = item.verified ? new Date(Date.now() - (i + 1) * 86400000) : null
+    const verifiedById = item.verified && existingOfficer ? existingOfficer.id : null
+
     const accused = await prisma.accused.create({
       data: {
         fullName: item.fullName,
         mobileNumber: item.mobileNumber,
         detailedAddress: item.detailedAddress,
         village: item.village,
-        city: item.city,
         taluka: item.taluka,
+        city: item.city,
         district: item.district,
         state: 'Maharashtra',
         pincode: item.pincode,
@@ -423,84 +592,119 @@ async function main() {
         longitude: item.longitude,
         locationStatus: item.locationStatus,
         locationAccuracy: item.locationAccuracy,
-        geocodedQuery: item.geocodedQuery,
-        geocodedDisplayName: item.geocodedDisplayName,
-        geocodedAt: new Date(),
-        verifiedById: isVerified ? officer.id : null,
-        verifiedAt: isVerified ? new Date() : null,
+        geocodedQuery: item.geocodedQuery || '',
+        geocodedDisplayName: item.geocodedDisplayName || '',
+        geocodedAt: item.latitude != null ? new Date(Date.now() - (30 - i) * 86400000) : null,
+        verifiedById,
+        verifiedAt,
       },
     })
-    createdAccused.push(accused)
+    createdAccusedList.push(accused)
 
-    await prisma.locationCheck.create({
-      data: {
-        accusedId: accused.id,
-        officerId: isVerified ? officer.id : null,
-        action: accused.locationStatus,
-        latitude: accused.latitude,
-        longitude: accused.longitude,
-        locationStatus: accused.locationStatus,
-        locationAccuracy: accused.locationAccuracy,
-        note: `Initial seeded record established with status '${accused.locationStatus}'`,
-      },
-    })
-
-    await prisma.auditLog.create({
-      data: {
-        userId: officer.id,
-        action: 'create',
-        modelName: 'Accused',
-        objectId: accused.id,
-        description: `Seeded dossier ${accused.fullName} (${accused.locationStatus})`,
-      },
-    })
+    // Add AuditLog and LocationCheck for verified and manually set records
+    if (item.locationStatus === 'verified') {
+      await prisma.locationCheck.create({
+        data: {
+          accusedId: accused.id,
+          officerId: verifiedById,
+          action: 'verified',
+          latitude: item.latitude,
+          longitude: item.longitude,
+          locationStatus: 'verified',
+          locationAccuracy: item.locationAccuracy,
+          note: 'Physical spot verification completed by investigating officer.',
+          timestamp: verifiedAt || new Date(),
+        },
+      })
+      await prisma.auditLog.create({
+        data: {
+          userId: verifiedById,
+          action: 'LOCATION_VERIFIED',
+          modelName: 'Accused',
+          objectId: accused.id,
+          description: `Location marked as verified by inspecting officer for record #${accused.id}. Coordinates: (${item.latitude}, ${item.longitude})`,
+          timestamp: verifiedAt || new Date(),
+        },
+      })
+    } else if (item.locationStatus === 'manually_set') {
+      const checkDate = new Date(Date.now() - (15 - (i % 5)) * 86400000)
+      await prisma.locationCheck.create({
+        data: {
+          accusedId: accused.id,
+          officerId: existingOfficer ? existingOfficer.id : null,
+          action: 'manually_set',
+          latitude: item.latitude,
+          longitude: item.longitude,
+          locationStatus: 'manually_set',
+          locationAccuracy: item.locationAccuracy,
+          note: 'Coordinates manually verified against ration card and voter registry.',
+          timestamp: checkDate,
+        },
+      })
+      await prisma.auditLog.create({
+        data: {
+          userId: existingOfficer ? existingOfficer.id : null,
+          action: 'LOCATION_MANUALLY_SET',
+          modelName: 'Accused',
+          objectId: accused.id,
+          description: `Location manually pinned for record #${accused.id}. Coordinates: (${item.latitude}, ${item.longitude})`,
+          timestamp: checkDate,
+        },
+      })
+    }
   }
 
-  console.log(`Created ${createdAccused.length} accused records across all 5 verification statuses.`)
+  console.log(`Created ${createdAccusedList.length} accused records with audit trails.`)
 
-  // Create 10 photos
-  const accusedWithCoords = createdAccused.filter((a) => a.latitude != null && a.longitude != null)
-  const colors = [
-    '#0B2A5B', '#071C3F', '#2E7D32', '#C62828', '#B26A00',
-    '#1E3A8A', '#065F46', '#831843', '#1F2937', '#312E81'
-  ]
-  const captions = [
-    'Spot verification at residence gate',
-    'Surveillance checkpoint documentation',
-    'Interrogation spot photo',
-    'Field identification confirmation',
-    'Property entrance verification',
-    'Night surveillance check',
-    'Vehicular movement checkpoint',
-    'Local area market spot verification',
-    'Transit point inspection photo',
-    'Joint police field verification log',
+  // Create exactly 15 valid JPEG photos across records
+  const colors = ['#0B2A5B', '#1B365D', '#2E7D32', '#37474F', '#4A148C', '#004D40']
+  const photoCaptions = [
+    'Frontal profile during station roll call verification',
+    'Spot photograph taken at residence entrance',
+    'Secondary photo during local enquiry at village square',
+    'Front face photograph for physical verification dossier',
+    'Side profile documented during summons service',
+    'Identity photograph taken at market yard verification',
+    'Field photo captured during beat patrol verification',
+    'Dwelling entrance photo taken with local panchas',
+    'Verification snapshot taken at workshop gate',
+    'Current physical identification photograph',
+    'Photograph taken during neighborhood verification inquiry',
+    'Portrait captured at taluka administrative office',
+    'Field location photo taken near landmark junction',
+    'Suspect dwelling exterior documented during field visit',
+    'Facial profile photo taken during inquiry documentation',
   ]
 
-  for (let i = 0; i < Math.min(10, accusedWithCoords.length); i++) {
-    const accused = accusedWithCoords[i]
-    const filename = `accused_${accused.id}_photo_${i + 1}.jpg`
+  for (let i = 0; i < 15; i++) {
+    // Distribute among geocoded records (first 25 records)
+    const targetAccused = createdAccusedList[i % 25]
+    const filename = `accused_${targetAccused.id}_photo_${i + 1}.jpg`
     const relativePath = await createDummyImage(
-      `PHOTO #${i + 1}: ${accused.fullName.slice(0, 15)}`,
+      `Photo #${i + 1}: ${targetAccused.fullName.slice(0, 18)}`,
       colors[i % colors.length],
       filename,
       'accused_photos'
     )
 
+    const lat = targetAccused.latitude ? targetAccused.latitude + (i * 0.0001) : 19.0988
+    const lon = targetAccused.longitude ? targetAccused.longitude + (i * 0.0001) : 72.8711
+
     await prisma.accusedPhoto.create({
       data: {
-        accusedId: accused.id,
+        accusedId: targetAccused.id,
         image: relativePath,
-        locationAddress: `${accused.detailedAddress}, ${accused.village}`,
-        latitude: accused.latitude! + 0.0001 * (i % 3),
-        longitude: accused.longitude! + 0.0001 * (i % 3),
-        caption: captions[i % captions.length],
+        locationAddress: `${targetAccused.detailedAddress}, ${targetAccused.village}`,
+        latitude: lat,
+        longitude: lon,
+        caption: photoCaptions[i],
+        uploadedAt: new Date(Date.now() - (20 - i) * 86400000),
       },
     })
   }
-  console.log('Created 10 field location photos with image integrity.')
+  console.log('Created exactly 15 valid accused photographs.')
 
-  // Create 5 famous places
+  // Create exactly 8 famous places across at least 3 districts
   const placesData = [
     {
       name: 'Chhatrapati Shivaji Maharaj International Airport (T2)',
@@ -512,13 +716,31 @@ async function main() {
       longitude: 72.8711,
     },
     {
+      name: 'Kanheri Caves, Sanjay Gandhi National Park',
+      description: 'Ancient rock-cut Buddhist monument cluster situated deep inside Sanjay Gandhi National Park.',
+      city: 'Borivali, Mumbai',
+      district: 'Mumbai Suburban',
+      address: 'Sanjay Gandhi National Park, Borivali East',
+      latitude: 19.2060,
+      longitude: 72.9064,
+    },
+    {
       name: 'Gateway of India',
-      description: 'Historic 20th-century arch monument overlooking the Arabian Sea in South Mumbai; high-security public landmark.',
+      description: 'Historic 20th-century basalt arch monument overlooking the Arabian Sea; high-security public landmark.',
       city: 'Mumbai',
       district: 'Mumbai City',
       address: 'Apollo Bandar, Colaba',
       latitude: 18.9220,
       longitude: 72.8347,
+    },
+    {
+      name: 'Chhatrapati Shivaji Maharaj Terminus (CSMT)',
+      description: 'UNESCO World Heritage railway terminus and iconic Victorian Gothic revival landmark in South Mumbai.',
+      city: 'Mumbai',
+      district: 'Mumbai City',
+      address: 'DN Road, Fort',
+      latitude: 18.9400,
+      longitude: 72.8354,
     },
     {
       name: 'Shaniwar Wada',
@@ -530,8 +752,17 @@ async function main() {
       longitude: 73.8553,
     },
     {
+      name: 'Aga Khan Palace',
+      description: 'Historic palace in Pune that served as a prison for Mahatma Gandhi and Kasturba Gandhi during the Quit India movement.',
+      city: 'Pune',
+      district: 'Pune',
+      address: 'Pune-Nagar Road, Kalyani Nagar',
+      latitude: 18.5524,
+      longitude: 73.9015,
+    },
+    {
       name: 'Ellora Caves (Verul)',
-      description: 'UNESCO World Heritage monument complex featuring monumental rock-cut cave architecture.',
+      description: 'UNESCO World Heritage monument complex featuring monumental rock-cut Hindu, Buddhist, and Jain cave architecture.',
       city: 'Aurangabad (Chhatrapati Sambhajinagar)',
       district: 'Aurangabad (Chhatrapati Sambhajinagar)',
       address: 'Verul Village, Khuldabad Taluka',
@@ -553,7 +784,7 @@ async function main() {
     const place = placesData[i]
     const filename = `place_${i + 1}.jpg`
     const relativePath = await createDummyImage(
-      place.name.slice(0, 20),
+      place.name.slice(0, 24),
       colors[i % colors.length],
       filename,
       'famous_places'
@@ -566,7 +797,7 @@ async function main() {
       },
     })
   }
-  console.log('Created 5 famous landmark records.')
+  console.log(`Created exactly ${placesData.length} famous landmark records across 5 districts.`)
 
   console.log('Seeding finished successfully!')
   await prisma.$disconnect()
