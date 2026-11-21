@@ -12,6 +12,7 @@ COPY frontend/package*.json ./frontend/
 # Install dependencies
 RUN npm ci
 RUN npm ci --prefix frontend
+RUN npm install --prefix frontend --no-save @rolldown/binding-linux-x64-musl@1.2.19
 
 # Copy source files
 COPY server/ ./server/
