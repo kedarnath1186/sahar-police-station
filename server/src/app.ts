@@ -12,6 +12,7 @@ import {
   FRONTEND_DIST_DIR,
 } from './config.js'
 import { PrismaSessionStore } from './sessionStore.js'
+import prisma from './db.js'
 import { ensureCsrfToken, verifyCsrfToken } from './middleware/csrf.js'
 import { authRouter } from './routes/auth.js'
 import { choicesRouter } from './routes/choices.js'
@@ -95,9 +96,14 @@ const apiLimiter = rateLimit({
 })
 app.use('/api', apiLimiter)
 
-// GET /healthz returns {"status": "ok"} without login and without CSRF verification
-app.get('/healthz', (req, res) => {
-  res.status(200).json({ status: 'ok' })
+// GET /healthz returns {"status": "ok"} when healthy, 503 if database fails
+app.get('/healthz', async (req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`
+    res.status(200).json({ status: 'ok' })
+  } catch {
+    res.status(503).json({ status: 'error', detail: 'Database unavailable' })
+  }
 })
 
 // Authenticated media file serving
