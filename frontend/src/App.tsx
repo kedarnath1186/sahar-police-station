@@ -3,8 +3,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link, Navigate, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { ApiError, api } from './api'
-import { LoginPage } from './pages/LoginPage'
 
+const LoginPage = lazy(() => import('./pages/LoginPage').then((module) => ({ default: module.LoginPage })))
 const AccusedDetailPage = lazy(() => import('./pages/AccusedDetailPage').then((module) => ({ default: module.AccusedDetailPage })))
 const AccusedFormPage = lazy(() => import('./pages/AccusedFormPage').then((module) => ({ default: module.AccusedFormPage })))
 const AccusedListPage = lazy(() => import('./pages/AccusedListPage').then((module) => ({ default: module.AccusedListPage })))
