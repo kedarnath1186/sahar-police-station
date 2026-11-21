@@ -25,11 +25,11 @@ services:
       PORT: 8000
       HOST: "0.0.0.0"
       DEBUG: "false"
-      SECRET_KEY: "production-secret-key-change-this-in-production-env"
-      ALLOWED_HOSTS: "localhost,127.0.0.1,app"
-      CSRF_TRUSTED_ORIGINS: "http://localhost:8000,http://127.0.0.1:8000"
-      DATABASE_URL: "postgresql://sahar_user:sahar_password@db:5432/sahar_police?schema=public"
-      NOMINATIM_CONTACT_EMAIL: "sahar.police.station@mahapolice.gov.in"
+      SECRET_KEY: ${SECRET_KEY:-sahar-production-secret-key-minimum-32-chars-long-randomized}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1,app}
+      CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-http://localhost:8000,http://127.0.0.1:8000}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://sahar_user:sahar_password@db:5432/sahar_police?schema=public}
+      NOMINATIM_CONTACT_EMAIL: ${NOMINATIM_CONTACT_EMAIL:-sahar.police.station@mahapolice.gov.in}
     volumes:
       - media_data:/app/media
     depends_on:
