@@ -11,6 +11,7 @@ import {
   STATIC_DIR,
   FRONTEND_DIST_DIR,
 } from './config.js'
+import { httpLogger } from './logger.js'
 import { PrismaSessionStore } from './sessionStore.js'
 import prisma from './db.js'
 import { ensureCsrfToken, verifyCsrfToken } from './middleware/csrf.js'
@@ -26,6 +27,9 @@ export const app = express()
 
 // Trust reverse proxies
 app.set('trust proxy', 1)
+
+// HTTP request logger and request ID tracing
+app.use(httpLogger)
 
 // Helmet for security headers
 app.use(
