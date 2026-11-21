@@ -17,7 +17,7 @@ RUN npm ci --prefix frontend
 COPY server/ ./server/
 COPY frontend/ ./frontend/
 COPY static/ ./static/
-COPY tsconfig.json vitest.config.ts ./
+COPY vitest.config.ts ./
 
 # Generate Prisma client and build
 RUN npm run prisma:generate
