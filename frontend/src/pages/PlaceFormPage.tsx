@@ -3,6 +3,7 @@ import { useEffect } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
+import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { z } from 'zod'
 import { api } from '../api'
@@ -32,6 +33,7 @@ export function PlaceFormPage() {
   const edit = Boolean(id)
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const { t } = useTranslation()
   const placeQuery = useQuery({
     queryKey: ['place', id],
     queryFn: () => api.get<FamousPlace>(`/api/places/${id}/`),
@@ -72,37 +74,37 @@ export function PlaceFormPage() {
     },
   })
 
-  if (edit && placeQuery.isPending) return <p className="loading-inline">Loading place…</p>
+  if (edit && placeQuery.isPending) return <p className="loading-inline">{t('common.loadingPlace')}</p>
   if (edit && placeQuery.isError) return <div className="notice error-notice" role="alert">{placeQuery.error.message}</div>
-  if (choices.isError) return <div className="notice error-notice" role="alert">Could not load form options.</div>
+  if (choices.isError) return <div className="notice error-notice" role="alert">{t('errors.loadChoices')}</div>
 
   return (
     <section>
       <div className="page-heading">
-        <p className="eyebrow">Famous Places</p>
-        <h2>{edit ? 'Edit Famous Place' : 'Add Famous Place'}</h2>
+        <p className="eyebrow">{t('places.title')}</p>
+        <h2>{edit ? t('places.edit') : t('places.add')}</h2>
       </div>
       <form className="card place-form" onSubmit={handleSubmit((values) => save.mutate(values))} noValidate>
         <div className="form-grid">
-          <FormField label="Place Name" error={errors.name?.message} wide><input {...register('name')} /></FormField>
-          <FormField label="Description" error={errors.description?.message} wide><textarea rows={4} {...register('description')} /></FormField>
-          <FormField label="City" error={errors.city?.message}><input {...register('city')} /></FormField>
-          <FormField label="District" error={errors.district?.message}>
+          <FormField label={t('form.placeName')} error={errors.name?.message} wide><input {...register('name')} /></FormField>
+          <FormField label={t('form.description')} error={errors.description?.message} wide><textarea rows={4} {...register('description')} /></FormField>
+          <FormField label={t('form.city')} error={errors.city?.message}><input {...register('city')} /></FormField>
+          <FormField label={t('common.district')} error={errors.district?.message}>
             <select {...register('district')}>
-              <option value="">Select a district</option>
+              <option value="">{t('form.selectDistrict')}</option>
               {choices.data?.districts.map((district) => <option key={district.value} value={district.value}>{district.label}</option>)}
             </select>
           </FormField>
-          <FormField label="Full Address" error={errors.address?.message} wide><input {...register('address')} /></FormField>
-          <FormField label="Photo (JPEG, PNG, WebP; up to 5 MB)" error={errors.photo?.message} wide>
+          <FormField label={t('form.fullAddress')} error={errors.address?.message} wide><input {...register('address')} /></FormField>
+          <FormField label={`${t('form.photo')} (${t('form.imageRules')})`} error={errors.photo?.message} wide>
             <input type="file" accept="image/jpeg,image/png,image/webp" {...register('photo')} />
           </FormField>
         </div>
         {edit && placeQuery.data?.photo_url && <img className="place-form-preview" src={placeQuery.data.photo_url} alt={placeQuery.data.name} />}
         {save.isError && <div className="notice error-notice" role="alert">{save.error.message}</div>}
         <div className="form-actions">
-          <button className="primary-button" type="submit" disabled={save.isPending}>{save.isPending ? 'Saving…' : 'Save Place'}</button>
-          <Link className="secondary-button link-button" to="/places">Cancel</Link>
+          <button className="primary-button" type="submit" disabled={save.isPending}>{save.isPending ? t('common.saving') : t('form.savePlace')}</button>
+          <Link className="secondary-button link-button" to="/places">{t('common.cancel')}</Link>
         </div>
       </form>
     </section>
