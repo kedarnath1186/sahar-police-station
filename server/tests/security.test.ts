@@ -15,6 +15,12 @@ describe('Security Headers & Content Security Policy', () => {
     expect(csp).toContain('https://fonts.gstatic.com')
     expect(csp).toContain('https://tile.openstreetmap.org')
     expect(csp).not.toContain('nominatim')
+    expect(csp).toContain("frame-ancestors 'none'")
+  })
+
+  it('sets frame-ancestors to none in CSP to prevent clickjacking', async () => {
+    const res = await request(app).get('/healthz')
+    expect(res.headers['content-security-policy']).toContain("frame-ancestors 'none'")
   })
 
   it('does not leak error stack trace in production mode', async () => {
