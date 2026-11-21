@@ -15,11 +15,61 @@ export const FRONTEND_DIST_DIR = path.resolve(ROOT_DIR, 'frontend/dist')
 export const PORT = Number(process.env.PORT || 8000)
 export const HOST = process.env.HOST || '0.0.0.0'
 export const SECRET_KEY = process.env.SECRET_KEY || 'sahar-police-station-super-secret-key-change-in-prod'
-export const DEBUG = process.env.DEBUG === 'true'
-export const ALLOWED_HOSTS = (process.env.ALLOWED_HOSTS || 'localhost,127.0.0.1').split(',').map((h) => h.trim())
+export const DEBUG = process.env.NODE_ENV !== 'production' && process.env.DEBUG === 'true'
+export const ALLOWED_HOSTS = (process.env.ALLOWED_HOSTS || 'localhost,127.0.0.1').split(',').map((h) => h.trim()).filter(Boolean)
 export const CSRF_TRUSTED_ORIGINS = (process.env.CSRF_TRUSTED_ORIGINS || 'http://localhost:8000,http://127.0.0.1:8000,http://localhost:5173')
   .split(',')
   .map((o) => o.trim())
+  .filter(Boolean)
+
+export const INSECURE_PLACEHOLDER_SECRETS = new Set([
+  'sahar-police-station-super-secret-key-change-in-prod',
+  'change-this-to-a-secure-random-secret-key',
+  'dev-secret-key-sahar-police-station-local-development',
+  'production-secret-key-change-this-in-production-env',
+  'secret',
+  'password',
+  'changeme',
+])
+
+export function validateProductionConfig(env: NodeJS.ProcessEnv = process.env): { valid: boolean; errors: string[] } {
+  const errors: string[] = []
+  const nodeEnv = env.NODE_ENV || 'development'
+
+  if (nodeEnv === 'production') {
+    const secret = env.SECRET_KEY ? env.SECRET_KEY.trim() : ''
+    if (!secret) {
+      errors.push('SECRET_KEY is required in production.')
+    } else if (
+      INSECURE_PLACEHOLDER_SECRETS.has(secret.toLowerCase()) ||
+      secret.includes('change-this') ||
+      secret.includes('change-in-prod')
+    ) {
+      errors.push(`SECRET_KEY cannot be set to insecure placeholder value '${secret}'.`)
+    } else if (secret.length < 32) {
+      errors.push('SECRET_KEY must be at least 32 characters long in production.')
+    }
+
+    const dbUrl = env.DATABASE_URL ? env.DATABASE_URL.trim() : ''
+    if (!dbUrl) {
+      errors.push('DATABASE_URL is required in production.')
+    } else if (dbUrl === 'file:./dev.db' || dbUrl.startsWith('file:') || dbUrl.includes('sqlite')) {
+      errors.push('DATABASE_URL must be a production database (e.g. PostgreSQL), not local SQLite.')
+    }
+
+    const allowedHosts = env.ALLOWED_HOSTS
+      ? env.ALLOWED_HOSTS.split(',').map((h) => h.trim()).filter(Boolean)
+      : []
+    if (allowedHosts.length === 0) {
+      errors.push('ALLOWED_HOSTS is required and cannot be empty in production.')
+    }
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors,
+  }
+}
 
 export const NOMINATIM_CONTACT_EMAIL = process.env.NOMINATIM_CONTACT_EMAIL || 'sahar.police.station@mahapolice.gov.in'
 export const DATABASE_URL = process.env.DATABASE_URL || 'file:./dev.db'
