@@ -49,7 +49,9 @@ export async function validateAndSaveImage(
 
 export async function deleteImageFile(relativeImagePath: string): Promise<void> {
   if (!relativeImagePath) return
-  const fullPath = path.join(MEDIA_DIR, relativeImagePath)
+  const normalizedMediaDir = path.resolve(MEDIA_DIR)
+  const fullPath = path.resolve(normalizedMediaDir, relativeImagePath)
+  if (!fullPath.startsWith(normalizedMediaDir + path.sep)) return
   try {
     if (fs.existsSync(fullPath)) {
       await fs.promises.unlink(fullPath)

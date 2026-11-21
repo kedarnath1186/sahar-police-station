@@ -17,14 +17,20 @@ mediaRouter.get('/*', (req, res) => {
   }
 
   const safePath = path.normalize(requestedPath).replace(/^(\.\.[\/\\])+/, '')
-  const filePath = path.resolve(MEDIA_DIR, safePath)
+  const normalizedMediaDir = path.resolve(MEDIA_DIR)
+  const filePath = path.resolve(normalizedMediaDir, safePath)
 
-  if (!filePath.startsWith(MEDIA_DIR)) {
+  if (!filePath.startsWith(normalizedMediaDir + path.sep) && filePath !== normalizedMediaDir) {
     return res.status(403).json({ detail: 'Access denied.' })
   }
 
-  if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
-    return res.sendFile(filePath)
+  try {
+    const stat = fs.statSync(filePath)
+    if (stat.isFile()) {
+      return res.sendFile(filePath)
+    }
+  } catch {
+    return res.status(404).json({ detail: 'Not found.' })
   }
 
   return res.status(404).json({ detail: 'Not found.' })

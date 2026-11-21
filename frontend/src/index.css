@@ -216,7 +216,7 @@ a { color: var(--navy); }
 }
 
 .login-language-picker select {
-  min-height: 38px;
+  min-height: 44px;
   border: 1.5px solid var(--gold);
   border-radius: 6px;
   padding: 6px 12px;
@@ -389,8 +389,10 @@ a { color: var(--navy); }
     position: absolute;
     top: 14px;
     right: 14px;
-    width: 38px;
-    height: 38px;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
     align-items: center;
     justify-content: center;
     border: 1px solid rgba(255, 255, 255, 0.25);
@@ -429,14 +431,14 @@ a { color: var(--navy); }
   .login-header-station { font-size: clamp(12px, 1.7vh, 13.5px); margin-top: 2px; line-height: 1.3; }
   .login-header { margin-bottom: clamp(8px, 1.4vh, 12px); }
   .login-top-bar { margin-bottom: clamp(4px, 0.8vh, 8px); }
-  .login-language-picker select { min-height: 32px; padding: 3px 8px; font-size: 12px; }
+  .login-language-picker select { min-height: 44px; padding: 6px 10px; font-size: 13px; }
   .login-card { padding: clamp(16px, 2.4vh, 22px) clamp(18px, 2.5vw, 24px); box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25); }
   .login-card-title { margin: 0 0 clamp(8px, 1.4vh, 14px); font-size: clamp(16px, 2.1vh, 18px); }
   .login-form { gap: clamp(8px, 1.3vh, 12px); }
   .login-field { gap: 3px; }
   .login-field label { font-size: 12px; }
   .login-field input { min-height: 38px; padding: 6px 10px; font-size: 14px; }
-  .login-submit { min-height: 38px; padding: 8px 14px; margin-top: 4px; font-size: 14px; }
+  .login-submit { min-height: 44px; padding: 10px 14px; margin-top: 4px; font-size: 14px; }
   .login-footer { margin-top: clamp(8px, 1.4vh, 14px); font-size: 11px; }
 }
 
@@ -748,6 +750,7 @@ a { color: var(--navy); }
 
 .app-footer {
   padding: 16px 24px;
+  padding-bottom: max(16px, env(safe-area-inset-bottom, 16px));
   text-align: center;
   font-size: 13px;
   color: var(--muted);
@@ -762,4 +765,5 @@ a { color: var(--navy); }
   color: #ffffff;
   font-weight: 500;
   padding: 16px;
+  padding-bottom: max(16px, env(safe-area-inset-bottom, 16px));
 }

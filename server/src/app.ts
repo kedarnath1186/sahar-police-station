@@ -11,7 +11,9 @@ import {
   STATIC_DIR,
   FRONTEND_DIST_DIR,
 } from './config.js'
+import { logger, httpLogger } from './logger.js'
 import { PrismaSessionStore } from './sessionStore.js'
+import prisma from './db.js'
 import { ensureCsrfToken, verifyCsrfToken } from './middleware/csrf.js'
 import { authRouter } from './routes/auth.js'
 import { choicesRouter } from './routes/choices.js'
@@ -26,10 +28,33 @@ export const app = express()
 // Trust reverse proxies
 app.set('trust proxy', 1)
 
+// HTTP request logger and request ID tracing
+app.use(httpLogger)
+
 // Helmet for security headers
 app.use(
   helmet({
-    contentSecurityPolicy: false,
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+        fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
+        imgSrc: [
+          "'self'",
+          'data:',
+          'blob:',
+          'https://tile.openstreetmap.org',
+          'https://*.tile.openstreetmap.org',
+          'https://*.tile.openstreetmap.de',
+        ],
+        connectSrc: ["'self'"],
+        objectSrc: ["'none'"],
+        baseUri: ["'self'"],
+        formAction: ["'self'"],
+        frameAncestors: ["'none'"],
+      },
+    },
     crossOriginEmbedderPolicy: false,
   })
 )
@@ -76,9 +101,14 @@ const apiLimiter = rateLimit({
 })
 app.use('/api', apiLimiter)
 
-// GET /healthz returns {"status": "ok"} without login and without CSRF verification
-app.get('/healthz', (req, res) => {
-  res.status(200).json({ status: 'ok' })
+// GET /healthz returns {"status": "ok"} when healthy, 503 if database fails
+app.get('/healthz', async (req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`
+    res.status(200).json({ status: 'ok' })
+  } catch {
+    res.status(503).json({ status: 'error', detail: 'Database unavailable' })
+  }
 })
 
 // Authenticated media file serving
@@ -128,5 +158,27 @@ if (fs.existsSync(FRONTEND_DIST_DIR)) {
     res.sendFile(path.resolve(FRONTEND_DIST_DIR, 'index.html'))
   })
 }
+
+// 404 handler for API routes
+app.use('/api', (req, res) => {
+  res.status(404).json({ detail: 'Not found' })
+})
+
+// Global error handling middleware - prevents stack traces and internal leaks in production
+app.use((err: any, req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  logger.error({ err, reqId: (req as any).id }, 'Unhandled request error')
+  const status = typeof err.status === 'number' ? err.status : (typeof err.statusCode === 'number' ? err.statusCode : 500)
+
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(status).json({
+      detail: status === 500 ? 'Internal server error' : (err.message || 'An error occurred'),
+    })
+  }
+
+  return res.status(status).json({
+    detail: err.message || 'Internal server error',
+    stack: err.stack,
+  })
+})
 
 export default app

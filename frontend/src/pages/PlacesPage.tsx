@@ -54,7 +54,7 @@ export function PlacesPage() {
   })
   const mapped = places.data?.filter((place) => place.latitude != null && place.longitude != null) ?? []
 
-  if (places.isPending) return <p className="loading-inline">Loading famous places…</p>
+  if (places.isPending) return <p className="loading-inline">{t('common.loadingPlaces')}</p>
   if (places.isError) return <div className="notice error-notice" role="alert">{places.error.message}</div>
   return (
     <section>
@@ -88,8 +88,8 @@ export function PlacesPage() {
         </div>
       ) : (
         <EmptyState
-          title="No famous places added"
-          description="Register prominent landmarks, transport hubs, and public locations to assist officers in spatial orientation."
+          title={t('places.emptyTitle')}
+          description={t('places.emptyText')}
           actionLabel={`+ ${t('nav.addPlace')}`}
           actionTo="/places/new"
         />
@@ -99,6 +99,7 @@ export function PlacesPage() {
 }
 
 function PlaceCard({ place, onDeleted }: { place: FamousPlace; onDeleted: () => void }) {
+  const { t } = useTranslation()
   const [confirming, setConfirming] = useState(false)
   const [confirmation, setConfirmation] = useState('')
   const remove = useMutation({
@@ -114,13 +115,13 @@ function PlaceCard({ place, onDeleted }: { place: FamousPlace; onDeleted: () => 
         <address>{place.address}</address>
         {place.latitude != null && place.longitude != null && <span className="muted-copy">{place.latitude.toFixed(5)}, {place.longitude.toFixed(5)}</span>}
         <div className="button-row">
-          <Link className="secondary-button link-button" to={`/places/${place.id}/edit`}>Edit</Link>
-          <button type="button" className="danger-button" onClick={() => setConfirming((value) => !value)}>Delete</button>
+          <Link className="secondary-button link-button" to={`/places/${place.id}/edit`}>{t('common.edit')}</Link>
+          <button type="button" className="danger-button" onClick={() => setConfirming((value) => !value)}>{t('common.delete')}</button>
         </div>
         {confirming && (
           <div className="photo-delete-confirm">
-            <label>Type DELETE to confirm<input value={confirmation} onChange={(event) => setConfirmation(event.target.value)} /></label>
-            <button type="button" className="danger-button" disabled={confirmation !== 'DELETE' || remove.isPending} onClick={() => remove.mutate()}>{remove.isPending ? 'Deleting…' : 'Confirm Delete'}</button>
+            <label>{t('places.deleteConfirm')}<input value={confirmation} onChange={(event) => setConfirmation(event.target.value)} /></label>
+            <button type="button" className="danger-button" disabled={confirmation !== 'DELETE' || remove.isPending} onClick={() => remove.mutate()}>{remove.isPending ? t('accused.deleting') : t('places.confirmDelete')}</button>
           </div>
         )}
         {remove.isError && <p className="field-error" role="alert">{remove.error.message}</p>}

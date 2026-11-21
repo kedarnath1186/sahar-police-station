@@ -31,6 +31,7 @@ async function main() {
   if (!username) {
     username = await prompt('Enter officer username: ')
   }
+  username = username.trim().toLowerCase()
   if (!username) {
     console.error('Username cannot be empty.')
     process.exit(1)

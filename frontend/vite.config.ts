@@ -8,6 +8,19 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        manualChunks(id: string) {
+          if (id.includes('node_modules')) {
+            if (id.includes('leaflet') || id.includes('react-leaflet')) return 'vendor-leaflet'
+            if (id.includes('@tanstack/react-table')) return 'vendor-table'
+            if (id.includes('@tanstack/react-query')) return 'vendor-query'
+            if (id.includes('i18next')) return 'vendor-i18n'
+            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom')) return 'vendor-react'
+          }
+        },
+      },
+    },
   },
   server: {
     proxy: {

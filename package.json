@@ -4,6 +4,10 @@
   "private": true,
   "description": "Sahar Police Station prototype application",
   "type": "module",
+  "engines": {
+    "node": ">=20.10.0",
+    "npm": ">=10.0.0"
+  },
   "scripts": {
     "dev:server": "tsx watch server/src/index.ts",
     "dev:frontend": "npm run dev --prefix frontend",
@@ -15,8 +19,10 @@
     "prisma:prepare": "node server/scripts/preparePrisma.js",
     "prisma:generate": "node server/scripts/preparePrisma.js && prisma generate --schema=server/prisma/schema.prisma",
     "prisma:push": "node server/scripts/preparePrisma.js && prisma db push --schema=server/prisma/schema.prisma",
+    "prisma:deploy": "node server/scripts/preparePrisma.js && prisma migrate deploy --schema=server/prisma/schema.prisma",
     "create-officer": "tsx server/src/scripts/createOfficer.ts",
-    "seed": "tsx server/src/scripts/seed.ts"
+    "seed": "tsx server/src/scripts/seed.ts",
+    "seed:test-records": "tsx server/src/scripts/seedTestRecords.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",

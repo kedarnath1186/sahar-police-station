@@ -1,4 +1,4 @@
-FROM node:20-alpine AS builder
+FROM node:20.18.0-alpine AS builder
 
 WORKDIR /app
 
@@ -24,7 +24,7 @@ RUN npm run prisma:generate
 RUN npm run build
 
 # Runner stage
-FROM node:20-alpine AS runner
+FROM node:20.18.0-alpine AS runner
 
 WORKDIR /app
 
@@ -32,8 +32,8 @@ ENV NODE_ENV=production
 ENV PORT=8000
 ENV HOST=0.0.0.0
 
-# Install runtime dependencies for sharp / native modules
-RUN apk add --no-cache vips
+# Install runtime dependencies for sharp and healthcheck
+RUN apk add --no-cache vips wget
 
 # Copy package files and install production dependencies
 COPY package*.json ./
@@ -48,9 +48,15 @@ COPY --from=builder /app/static ./static
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
-# Create media directory for uploads
-RUN mkdir -p media/accused_photos media/famous_places
+# Create media directory and set ownership to unprivileged user
+RUN mkdir -p /app/media/accused_photos /app/media/famous_places && \
+    chown -R node:node /app
+
+USER node
 
 EXPOSE 8000
 
-CMD ["sh", "-c", "npm run prisma:push && node server/dist/index.js"]
+HEALTHCHECK --interval=15s --timeout=5s --start-period=10s --retries=3 \
+  CMD wget -qO- http://localhost:8000/healthz || exit 1
+
+CMD ["sh", "-c", "npm run prisma:deploy && node server/dist/index.js"]
