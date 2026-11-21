@@ -114,6 +114,14 @@ function ProtectedLayout() {
         onClick={() => setMenuOpen(false)}
       />
       <aside className={`sidebar ${menuOpen ? 'is-open' : ''}`}>
+        <button
+          type="button"
+          className="sidebar-close-btn"
+          aria-label={t('nav.close')}
+          onClick={() => setMenuOpen(false)}
+        >
+          ✕
+        </button>
         <Link className="brand" to="/" onClick={() => setMenuOpen(false)}>
           <img src="/static/img/maharashtra_police_logo.png" alt={t('app.logoAlt')} />
           <span className="brand-force">{t('app.force')}</span>

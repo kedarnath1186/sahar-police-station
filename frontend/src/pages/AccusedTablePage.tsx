@@ -173,16 +173,6 @@ export function AccusedTablePage() {
               />
             )}
           </div>
-          <div className="pagination table-pagination">
-            <label className="page-size"><span>Rows</span>
-              <select value={pagination.pageSize} onChange={(event) => table.setPageSize(Number(event.target.value))}>
-                {[10, 20, 50, 100].map((size) => <option key={size} value={size}>{size}</option>)}
-              </select>
-            </label>
-            <button type="button" className="secondary-button" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>Previous</button>
-            <span>Page {pagination.pageIndex + 1} of {Math.max(records.data.total_pages, 1)}</span>
-            <button type="button" className="secondary-button" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>Next</button>
-          </div>
           <div className="table-cards">
             {records.data.results.map((record) => (
               <article className="accused-card" key={record.id}>
@@ -192,6 +182,16 @@ export function AccusedTablePage() {
                 <div className="record-card-bottom"><span>{formatIstDate(record.created_at)}</span><Link to={`/accused/${record.id}/edit`}>Edit record</Link></div>
               </article>
             ))}
+          </div>
+          <div className="pagination table-pagination">
+            <label className="page-size"><span>Rows</span>
+              <select value={pagination.pageSize} onChange={(event) => table.setPageSize(Number(event.target.value))}>
+                {[10, 20, 50, 100].map((size) => <option key={size} value={size}>{size}</option>)}
+              </select>
+            </label>
+            <button type="button" className="secondary-button" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>Previous</button>
+            <span>Page {pagination.pageIndex + 1} of {Math.max(records.data.total_pages, 1)}</span>
+            <button type="button" className="secondary-button" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>Next</button>
           </div>
         </>
       )}
