@@ -97,4 +97,44 @@ describe('Auth & Session API', () => {
     expect(sixthRes.status).toBe(429)
     expect(sixthRes.body.detail).toContain('Security lockout')
   })
+
+  it('proves "Officer" and "officer" share one lockout counter to prevent casing bypass', async () => {
+    const agent = request.agent(app)
+    const csrfRes = await agent.get('/api/auth/csrf')
+    const token = csrfRes.body.csrfToken
+
+    // 2 failed attempts with "officer"
+    for (let i = 1; i <= 2; i++) {
+      const res = await agent
+        .post('/api/auth/login')
+        .set('X-CSRFToken', token)
+        .send({ username: 'officer', password: 'wrongpassword' })
+      expect(res.status).toBe(401)
+    }
+
+    // 2 failed attempts with "Officer" (capitalized)
+    for (let i = 1; i <= 2; i++) {
+      const res = await agent
+        .post('/api/auth/login')
+        .set('X-CSRFToken', token)
+        .send({ username: 'Officer', password: 'wrongpassword' })
+      expect(res.status).toBe(401)
+    }
+
+    // 5th failed attempt with "OFFICER" triggers lockout across all casings (total failures = 5)
+    const fifthRes = await agent
+      .post('/api/auth/login')
+      .set('X-CSRFToken', token)
+      .send({ username: 'OFFICER', password: 'wrongpassword' })
+    expect(fifthRes.status).toBe(429)
+    expect(fifthRes.body.detail).toContain('Security lockout')
+
+    // 6th attempt with lowercase "officer" is also locked out (sharing the counter)
+    const sixthRes = await agent
+      .post('/api/auth/login')
+      .set('X-CSRFToken', token)
+      .send({ username: 'officer', password: 'police123' })
+    expect(sixthRes.status).toBe(429)
+    expect(sixthRes.body.detail).toContain('Security lockout')
+  })
 })

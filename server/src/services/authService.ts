@@ -16,6 +16,10 @@ export async function verifyPassword(hash: string, plain: string): Promise<boole
   }
 }
 
+export function normalizeUsername(username: string): string {
+  return (username || '').trim().toLowerCase()
+}
+
 export async function authenticateOfficer(
   username: string,
   password: string,
@@ -25,12 +29,13 @@ export async function authenticateOfficer(
   error: string | null
   locked: boolean
 }> {
+  const normalizedUsername = normalizeUsername(username)
   const sinceTime = new Date(Date.now() - LOGIN_LOCKOUT_MINUTES * 60 * 1000)
 
-  // Count recent failed attempts for this username within the lockout window
+  // Count recent failed attempts for this normalized username within the lockout window
   const recentFailures = await prisma.loginAttempt.count({
     where: {
-      username,
+      username: normalizedUsername,
       successful: false,
       timestamp: {
         gte: sinceTime,
@@ -46,15 +51,20 @@ export async function authenticateOfficer(
     }
   }
 
-  const user = await prisma.user.findUnique({
-    where: { username },
+  let user = await prisma.user.findUnique({
+    where: { username: normalizedUsername },
   })
+  if (!user && username !== normalizedUsername) {
+    user = await prisma.user.findUnique({
+      where: { username },
+    })
+  }
 
   const isValid = user ? await verifyPassword(user.password, password) : false
 
   await prisma.loginAttempt.create({
     data: {
-      username,
+      username: normalizedUsername,
       ipAddress: ipAddress || null,
       successful: isValid,
     },
