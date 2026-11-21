@@ -3,7 +3,7 @@ FROM node:22-alpine AS builder
 WORKDIR /app
 
 # Install build dependencies
-RUN apk add --no-cache python3 make g++
+RUN apk add --no-cache openssl python3 make g++
 
 # Copy package files
 COPY package*.json ./
@@ -34,7 +34,7 @@ ENV PORT=8000
 ENV HOST=0.0.0.0
 
 # Install runtime dependencies for sharp and healthcheck
-RUN apk add --no-cache vips wget
+RUN apk add --no-cache openssl vips wget
 
 # Copy package files and install production dependencies
 COPY package*.json ./
