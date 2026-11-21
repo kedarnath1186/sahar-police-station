@@ -139,4 +139,23 @@ describe('Photo Upload & Security Tests', () => {
     expect(goodRes.status).toBe(204)
     expect(await prisma.accusedPhoto.findUnique({ where: { id: photoId } })).toBeNull()
   })
+
+  it('rejects image files exceeding the 5 MB limit', async () => {
+    // 5.5 MB payload
+    const oversizedBuffer = Buffer.alloc(5.5 * 1024 * 1024, 0)
+
+    const res = await agent
+      .post(`/api/accused/${accusedId}/photos`)
+      .set('X-CSRFToken', csrfToken)
+      .attach('image', oversizedBuffer, 'oversized.jpg')
+      .field('location_address', 'Address')
+
+    expect(res.status).toBeGreaterThanOrEqual(400)
+  })
+
+  it('blocks directory traversal attempts on /media route', async () => {
+    const traversalRes = await agent.get('/media/../../package.json')
+    expect(traversalRes.status).toBeGreaterThanOrEqual(400)
+    expect(traversalRes.text).not.toContain('sahar-police-station')
+  })
 })
