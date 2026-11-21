@@ -16,7 +16,8 @@
     "prisma:generate": "node server/scripts/preparePrisma.js && prisma generate --schema=server/prisma/schema.prisma",
     "prisma:push": "node server/scripts/preparePrisma.js && prisma db push --schema=server/prisma/schema.prisma",
     "create-officer": "tsx server/src/scripts/createOfficer.ts",
-    "seed": "tsx server/src/scripts/seed.ts"
+    "seed": "tsx server/src/scripts/seed.ts",
+    "seed:test-records": "tsx server/src/scripts/seedTestRecords.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
