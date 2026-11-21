@@ -107,11 +107,24 @@ if (fs.existsSync(frontendPublic)) {
 
 // Serve frontend build if dist exists
 if (fs.existsSync(FRONTEND_DIST_DIR)) {
-  app.use(express.static(FRONTEND_DIST_DIR))
+  app.use(
+    express.static(FRONTEND_DIST_DIR, {
+      setHeaders: (res, filePath) => {
+        if (filePath.endsWith('index.html')) {
+          res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate')
+          res.setHeader('Pragma', 'no-cache')
+          res.setHeader('Expires', '0')
+        }
+      },
+    })
+  )
   app.get('*', (req, res, next) => {
     if (req.path.startsWith('/api') || req.path.startsWith('/media') || req.path.startsWith('/static')) {
       return next()
     }
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate')
+    res.setHeader('Pragma', 'no-cache')
+    res.setHeader('Expires', '0')
     res.sendFile(path.resolve(FRONTEND_DIST_DIR, 'index.html'))
   })
 }
