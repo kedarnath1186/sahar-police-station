@@ -11,7 +11,7 @@ import {
   STATIC_DIR,
   FRONTEND_DIST_DIR,
 } from './config.js'
-import { httpLogger } from './logger.js'
+import { logger, httpLogger } from './logger.js'
 import { PrismaSessionStore } from './sessionStore.js'
 import prisma from './db.js'
 import { ensureCsrfToken, verifyCsrfToken } from './middleware/csrf.js'
@@ -157,5 +157,27 @@ if (fs.existsSync(FRONTEND_DIST_DIR)) {
     res.sendFile(path.resolve(FRONTEND_DIST_DIR, 'index.html'))
   })
 }
+
+// 404 handler for API routes
+app.use('/api', (req, res) => {
+  res.status(404).json({ detail: 'Not found' })
+})
+
+// Global error handling middleware - prevents stack traces and internal leaks in production
+app.use((err: any, req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  logger.error({ err, reqId: (req as any).id }, 'Unhandled request error')
+  const status = typeof err.status === 'number' ? err.status : (typeof err.statusCode === 'number' ? err.statusCode : 500)
+
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(status).json({
+      detail: status === 500 ? 'Internal server error' : (err.message || 'An error occurred'),
+    })
+  }
+
+  return res.status(status).json({
+    detail: err.message || 'Internal server error',
+    stack: err.stack,
+  })
+})
 
 export default app

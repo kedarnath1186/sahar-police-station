@@ -16,4 +16,20 @@ describe('Security Headers & Content Security Policy', () => {
     expect(csp).toContain('https://tile.openstreetmap.org')
     expect(csp).not.toContain('nominatim')
   })
+
+  it('does not leak error stack trace in production mode', async () => {
+    const prevEnv = process.env.NODE_ENV
+    process.env.NODE_ENV = 'production'
+    try {
+      const res = await request(app)
+        .post('/api/auth/login')
+        .set('Content-Type', 'application/json')
+        .send('{"invalid_json: true')
+
+      expect(res.status).toBeGreaterThanOrEqual(400)
+      expect(res.body.stack).toBeUndefined()
+    } finally {
+      process.env.NODE_ENV = prevEnv
+    }
+  })
 })
